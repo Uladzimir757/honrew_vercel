@@ -1,16 +1,36 @@
-# Файл: api/index.py (ФИНАЛЬНАЯ ВЕРСИЯ)
+# Файл: api/index.py (ВРЕМЕННЫЙ ДИАГНОСТИЧЕСКИЙ КОД)
 import sys
 import os
 
-# --- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ ---
-# Эта строка добавляет корневую папку проекта в путь, где Python ищет модули.
-# Это позволит найти папку 'app'.
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-# -------------------------
+# Пустой объект Flask/WSGI, чтобы Vercel был доволен
+def app(environ, start_response):
+    # Получаем текущую рабочую директорию
+    cwd = os.getcwd()
+    
+    # Получаем список всех путей, где Python ищет модули
+    sys_path = "\n".join(sys.path)
+    
+    # Получаем список файлов и папок в корне проекта
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    root_contents = "\n".join(os.listdir(project_root))
 
-# Теперь этот импорт сработает
-# Важно: в вашем файле app/main.py используется функция get_app()
-from app.main import get_app
+    # Формируем ответ, который покажет нам всю эту информацию
+    output = f"""
+    --- Vercel Python Environment Diagnostics ---
 
-# Vercel ищет WSGI-совместимый объект с именем 'app'
-app = get_app()
+    Current Working Directory:
+    {cwd}
+
+    -------------------------------------------
+
+    Python Search Paths (sys.path):
+    {sys_path}
+
+    -------------------------------------------
+
+    Contents of Project Root ({project_root}):
+    {root_contents}
+    """
+    
+    start_response('200 OK', [('Content-Type', 'text/plain')])
+    return [output.encode('utf-8')]
