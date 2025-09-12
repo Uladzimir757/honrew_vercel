@@ -1,9 +1,5 @@
-fastapi
-uvicorn
-jinja2
-itsdangerous
-python-multipart  # для работы с формами в FastAPI
-sqlalchemy        # если вы будете использовать Neon/Postgres
-psycopg2-binary   # драйвер для Postgres
-boto3             # для работы с R2 как с S3
 Flask
+Jinja2
+itsdangerous
+psycopg2-binary
+boto3

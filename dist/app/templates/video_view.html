@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block body_attributes %}data-lang="{{ lang }}"{% endblock %}
+
+{% block meta_tags %}
+<meta name="description" content="{{ description }}">
+{% endblock meta_tags %}
+
+{% block content %}
+<div class="py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-glass rounded-2xl shadow-lg overflow-hidden">
+            
+            <div class="w-full aspect-video bg-black flex items-center justify-center">
+                {% if video.media_type == 'video' %}
+                    <video controls class="w-full h-auto" {% if preview_url %}poster="{{ preview_url }}"{% endif %}>
+                        <source src="{{ media_url }}" type="video/mp4">
+                    </video>
+                {% else %}
+                    <img src="{{ media_url }}" alt="{{ video.title }}" class="w-full h-auto object-contain">
+                {% endif %}
+            </div>
+
+            <div class="p-6 md:p-8">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-xs font-semibold uppercase text-blue-400">{{ video.category }}</span>
+                        <h1 class="text-3xl font-bold text-white mt-2">{{ video.what }}</h1>
+                        <p class="text-lg text-gray-300 mt-1">{{ video.where }}</p>
+                    </div>
+                    {% if user and user.id != video.author_id %}
+                    <div class="relative complaint-container group flex-shrink-0 ml-4">
+                        <button class="complaint-button flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-colors p-2 rounded-lg hover:bg-slate-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                            </svg>
+                            <span class="text-base font-semibold hidden sm:inline">{{ tr.complaint_report }}</span>
+                        </button>
+                        <div class="complaint-reasons hidden absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-md shadow-lg z-10">
+                            <form class="complaint-form" data-content-id="{{ video.id }}" data-content-type="review">
+                                <button type="submit" name="reason" value="spam" class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-slate-700">{{ tr.complaint_reason_spam }}</button>
+                                <button type="submit" name="reason" value="insult" class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-slate-700">{{ tr.complaint_reason_insult }}</button>
+                                <button type="submit" name="reason" value="fraud" class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-slate-700">{{ tr.complaint_reason_fraud }}</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="mt-4 flex items-center">
+                    {% for i in range(1, 6) %}
+                        <svg class="w-6 h-6 {% if i <= video.rating %}text-yellow-400{% else %}text-gray-600{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.955a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.368 2.448a1 1 0 00-.364 1.118l1.287 3.955c.3.921-.755 1.688-1.54 1.118l-3.368-2.448a1 1 0 00-1.176 0l-3.368 2.448c-.784.57-1.838-.197-1.54-1.118l1.287-3.955a1 1 0 00-.364-1.118L2.35 9.382c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69L9.049 2.927z" />
+                        </svg>
+                    {% endfor %}
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-slate-700">
+                    <p class="text-gray-300 whitespace-pre-wrap">{{ video.description }}</p>
+                    <p class="text-sm text-gray-500 mt-2">{{ tr.video_by }}: 
+                        <a href="/user/{{ video.user_id }}?lang={{ lang }}" class="text-blue-400 hover:underline">
+                            {{ video.author_email }}
+                        </a>
+                    </p>
+                </div>
+
+                <div class="mt-6 flex items-center space-x-4">
+                    {% if user %}
+                    <form id="like-form" action="/api/video/{{ video.id }}/like" method="POST">
+                        <button type="submit" id="like-button" class="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 {% if user_has_liked %}text-red-500{% else %}text-gray-400 hover:text-red-400{% endif %}" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </form>
+                    {% endif %}
+                    <span id="likes-count" class="text-lg font-medium text-white">{{ likes_count }}</span>
+                    <span class="text-gray-400">{{ tr.likes_count }}</span>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-700 px-6 md:px-8 py-6 bg-slate-800/50">
+                <h3 class="text-xl font-bold text-white mb-4">{{ tr.company_reply_title }}</h3>
+                
+                {% if company_reply %}
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0">
+                            <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white">
+                                {{ company_reply.company_email[0]|upper }}
+                            </div>
+                        </div>
+                        <div class="flex-grow">
+                            <div class="flex items-baseline space-x-3">
+                                <p class="font-semibold text-white">{{ company_reply.company_email }}</p>
+                                <p class="text-xs text-gray-500">{{ company_reply.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            </div>
+                            <p class="mt-1 text-gray-300 whitespace-pre-wrap">{{ company_reply.content }}</p>
+                        </div>
+                    </div>
+                {% elif can_reply %}
+                    <form action="/video/{{ video.id }}/reply?lang={{ lang }}" method="POST">
+                        <textarea name="content" rows="4" class="w-full bg-slate-700/50 text-white rounded-md border-gray-600 focus:ring-blue-500 focus:border-blue-500" placeholder="{{ tr.company_reply_placeholder }}" required></textarea>
+                        <button type="submit" class="mt-2 px-5 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                            {{ tr.company_reply_button }}
+                        </button>
+                    </form>
+                {% else %}
+                    <p class="text-gray-400">Компания еще не оставила ответ на этот отзыв.</p>
+                {% endif %}
+            </div>
+
+            <div class="border-t border-slate-700 px-6 md:px-8 py-6">
+                <h3 class="text-xl font-bold text-white mb-6">{{ tr.comments_title }} (<span id="comments-count">{{ comments|length }}</span>)</h3>
+                
+                {% if user %}
+                <form id="comment-form" action="/api/video/{{ video.id }}/comment" method="POST" class="mb-8">
+                    <textarea name="content" id="comment-content" rows="3" class="w-full bg-slate-700/50 text-white rounded-md border-gray-600 focus:ring-blue-500 focus:border-blue-500" placeholder="{{ tr.add_comment_placeholder }}" required></textarea>
+                    <button type="submit" class="mt-2 px-5 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                        {{ tr.add_comment_button }}
+                    </button>
+                </form>
+                {% else %}
+                <div class="text-center bg-slate-900/50 p-4 rounded-lg mb-8">
+                    <p class="text-gray-300">{{ tr.login_to_comment }}</p>
+                </div>
+                {% endif %}
+
+                <div id="comments-list" class="space-y-6">
+                    {% for comment in comments %}
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0">
+                            <div class="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center font-bold text-white">
+                                {{ comment.author_email[0]|upper }}
+                            </div>
+                        </div>
+                        <div class="flex-grow">
+                            <div class="flex items-baseline space-x-3">
+                                <a href="/user/{{ comment.author_id }}?lang={{ lang }}" class="font-semibold text-white hover:underline">{{ comment.author_email }}</a>
+                                <p class="text-xs text-gray-500">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            </div>
+                            <p class="mt-1 text-gray-300 whitespace-pre-wrap">{{ comment.content }}</p>
+                        </div>
+                        {% if user and user.id != comment.author_id %}
+                        <div class="relative complaint-container group flex-shrink-0">
+                            <button class="complaint-button flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-colors p-2 rounded-lg hover:bg-slate-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                                </svg>
+                                <span class="text-base font-semibold hidden sm:inline">{{ tr.complaint_report }}</span>
+                            </button>
+                            <div class="complaint-reasons hidden absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-md shadow-lg z-10">
+                                <form class="complaint-form" data-content-id="{{ video.id }}" data-content-type="review">
+                                    <button type="submit" name="reason" value="spam" class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-slate-700">{{ tr.complaint_reason_spam }}</button>
+                                    <button type="submit" name="reason" value="insult" class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-slate-700">{{ tr.complaint_reason_insult }}</button>
+                                    <button type="submit" name="reason" value="fraud" class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-slate-700">{{ tr.complaint_reason_fraud }}</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <p id="no-comments-message" class="text-gray-400">Комментариев пока нет.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script id="translations" type="application/json">
+    {
+        "complaint_success": "{{ tr.complaint_success }}",
+        "complaint_error_network": "{{ tr.complaint_error_network }}",
+        "complaint_error_generic": "{{ tr.complaint_error_generic }}"
+    }
+</script>
+
+<script src="{{ url_for('static', path='js/video-player.js') }}"></script>
+<script src="{{ url_for('static', path='js/complaints.js') }}"></script>
+{% endblock %}

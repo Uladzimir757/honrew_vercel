@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="w-full max-w-md space-y-8">
+        <div class="bg-slate-800/70 backdrop-blur-sm border border-slate-700 rounded-2xl shadow-lg p-8">
+            <h2 class="text-center text-3xl font-bold tracking-tight text-white">{{ tr.login_page_title }}</h2>
+            <form class="mt-8 space-y-6" action="/login?lang={{ lang }}" method="POST">
+                <div class="rounded-md shadow-sm">
+                    <div>
+                        <input name="email" type="email" autocomplete="email" required
+                            class="relative block w-full px-3 py-2 bg-white/10 text-white border border-slate-600 rounded-t-md placeholder-gray-400 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                            placeholder="{{ tr.email_placeholder }}">
+                    </div>
+                    <div class="relative">
+                        <input name="password" type="password" id="password" autocomplete="current-password" required
+                            class="relative block w-full px-3 py-2 bg-white/10 text-white border border-slate-600 rounded-b-md placeholder-gray-400 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                            placeholder="{{ tr.password_placeholder }}">
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5">
+                            <svg data-target="password" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-400 cursor-pointer password-toggle-icon">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>                              
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end">
+                    <div class="text-sm">
+                        <a href="/forgot-password?lang={{ lang }}" class="font-medium text-blue-400 hover:text-blue-300">{{ tr.forgot_password_link }}</a>
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit"
+                        class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        {{ tr.login }}
+                    </button>
+                </div>
+            </form>
+            <div class="text-sm text-center mt-6">
+                <a href="/register?lang={{ lang }}" class="font-medium text-blue-400 hover:text-blue-300">{{
+                    tr.dont_have_account }} {{ tr.register }}</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

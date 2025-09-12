@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <h1 class="text-4xl font-bold text-white mb-8">{{ tr.profile_page_title }}</h1>
+
+    <div class="bg-glass rounded-lg shadow-lg p-6 md:p-8 mb-8 flex flex-col md:flex-row items-start gap-8">
+        <div class="text-center md:text-left flex-shrink-0">
+            {% if db_user.avatar_filename %}
+                <img src="{{ settings.R2_PUBLIC_URL }}/{{ settings.S3_BUCKET_NAME }}/{{ db_user.avatar_filename }}" alt="Аватар" class="w-32 h-32 rounded-full mx-auto md:mx-0 object-cover border-4 border-slate-600">
+            {% else %}
+                <div class="w-32 h-32 rounded-full mx-auto md:mx-0 bg-slate-700 flex items-center justify-center text-4xl font-bold text-white border-4 border-slate-600">
+                    {{ db_user.email[0]|upper }}
+                </div>
+            {% endif %}
+            <form action="/profile/avatar" method="post" enctype="multipart/form-data" class="mt-4">
+                 <input type="file" name="avatar_file" class="text-sm text-slate-400 w-full file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700" required>
+                 <button type="submit" class="mt-2 w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition">{{ tr.profile_upload_avatar }}</button>
+            </form>
+        </div>
+        <div class="flex-grow">
+            <h2 class="text-2xl font-bold text-white">{{ db_user.username or db_user.email }}</h2>
+            <p class="text-slate-400 mt-1">{{ db_user.email }}</p>
+            <p class="text-slate-300 mt-4 whitespace-pre-wrap">{{ db_user.bio or tr.profile_description_missing }}</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-glass rounded-lg shadow-lg p-6 md:p-8">
+            <h3 class="text-2xl font-semibold text-white mb-6">{{ tr.profile_personal_info }}</h3>
+            <form action="/profile/update" method="post">
+                <div class="mb-4">
+                    <label for="username" class="block text-slate-300 text-sm font-bold mb-2">{{ tr.profile_username_label }}</label>
+                    <input type="text" id="username" name="username" value="{{ db_user.username or '' }}" class="w-full bg-slate-700/50 text-white rounded-md border-gray-600 focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label for="bio" class="block text-slate-300 text-sm font-bold mb-2">{{ tr.profile_bio_label }}</label>
+                    <textarea id="bio" name="bio" rows="4" class="w-full bg-slate-700/50 text-white rounded-md border-gray-600 focus:ring-blue-500 focus:border-blue-500">{{ db_user.bio or '' }}</textarea>
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700 transition">{{ tr.profile_save_info }}</button>
+            </form>
+        </div>
+
+        <div class="bg-glass rounded-lg shadow-lg p-6 md:p-8">
+            <h3 class="text-2xl font-semibold text-white mb-6">{{ tr.profile_password_change }}</h3>
+            <form action="/profile/password" method="post">
+                <div class="mb-4">
+                    <label for="current_password" class="block text-slate-300 text-sm font-bold mb-2">{{ tr.profile_current_password }}</label>
+                    <input type="password" id="current_password" name="current_password" class="w-full bg-slate-700/50 text-white rounded-md border-gray-600 focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+                <div class="mb-4">
+                    <label for="new_password" class="block text-slate-300 text-sm font-bold mb-2">{{ tr.profile_new_password }}</label>
+                    <input type="password" id="new_password" name="new_password" class="w-full bg-slate-700/50 text-white rounded-md border-gray-600 focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label for="confirm_password" class="block text-slate-300 text-sm font-bold mb-2">{{ tr.profile_confirm_new_password }}</label>
+                    <input type="password" id="confirm_password" name="confirm_password" class="w-full bg-slate-700/50 text-white rounded-md border-gray-600 focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+                <button type="submit" class="w-full bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700 transition">{{ tr.profile_submit_password_change }}</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="mt-8 bg-red-900/10 border border-red-500/10 rounded-lg shadow-lg p-6 md:p-8">
+        <h3 class="text-2xl font-semibold text-red-300 mb-4">{{ tr.profile_danger_zone }}</h3>
+        <p class="text-slate-400 mb-6">{{ tr.profile_delete_warning }}</p>
+        <form action="/profile/delete/request" method="post" onsubmit="return confirm('{{ tr.profile_delete_confirm_js }}');">
+            <button type="submit" class="w-full sm:w-auto bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700 transition">{{ tr.profile_delete_button }}</button>
+        </form>
+    </div>
+
+    <div class="mt-12">
+        <h3 class="text-3xl font-bold text-white mb-6">{{ tr.my_reviews }}</h3>
+        {% if videos %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for video in videos %}
+            <div class="bg-glass rounded-lg overflow-hidden shadow-lg transform hover:-translate-y-2 transition-transform duration-300 flex flex-col">
+                <a href="/video/{{ video.id }}?lang={{ lang }}" class="block relative">
+                    {% if video.media_type == 'video' %}
+                    <video muted class="w-full h-48 object-cover" {% if video.preview_filename %}poster="{{ settings.R2_PUBLIC_URL }}/{{ settings.S3_BUCKET_NAME }}/{{ video.preview_filename }}"{% endif %} loading="lazy" playsinline>
+                        <source src="{{ settings.R2_PUBLIC_URL }}/{{ settings.S3_BUCKET_NAME }}/{{ video.filename }}" type="video/mp4">
+                    </video>
+                    {% else %}
+                    <img src="{{ settings.R2_PUBLIC_URL }}/{{ settings.S3_BUCKET_NAME }}/{{ video.filename }}" alt="{{ video.title }}" class="w-full h-48 object-cover" loading="lazy">
+                    {% endif %}
+                    <div class="absolute top-2 right-2">
+                         {% if video.status == 'pending_review' %}
+                            <span class="inline-flex items-center rounded-md bg-yellow-400/20 px-2 py-1 text-xs font-medium text-yellow-300 ring-1 ring-inset ring-yellow-400/30">
+                                {{ tr.admin_pending }}
+                            </span>
+                        {% elif video.status == 'rejected' %}
+                            <span class="inline-flex items-center rounded-md bg-red-500/20 px-2 py-1 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-500/30">
+                                {{ tr.admin_rejected }}
+                            </span>
+                        {% elif video.status == 'published' %}
+                            <span class="inline-flex items-center rounded-md bg-green-500/20 px-2 py-1 text-xs font-medium text-green-400 ring-1 ring-inset ring-green-500/30">
+                                {{ tr.admin_published }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </a>
+                <div class="p-6 flex-grow flex flex-col">
+                     <h3 class="text-xl font-semibold text-white mt-2 mb-2">
+                        <a href="/video/{{ video.id }}?lang={{ lang }}" class="hover:text-blue-300">{{ video.title }}</a>
+                    </h3>
+                    <div class="mt-auto pt-4 border-t border-gray-700 flex justify-between items-center gap-4">
+                        <a href="/video/edit/{{ video.id }}?lang={{ lang }}" class="flex-1 text-center bg-green-600 text-white font-bold py-2 px-3 rounded hover:bg-green-700 transition text-sm">{{ tr.edit }}</a>
+                        <form action="/video/delete/{{ video.id }}" method="post" onsubmit="return confirm('{{ tr.delete_confirm }}');" class="flex-1">
+                            <button type="submit" class="w-full bg-red-600 text-white font-bold py-2 px-3 rounded hover:bg-red-700 transition text-sm">{{ tr.delete }}</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-16 bg-glass rounded-lg">
+            <p class="text-xl text-gray-400">{{ tr.no_reviews_yet }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
