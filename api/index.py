@@ -1,3 +1,7 @@
 # Файл: api/index.py
-from main import get_app
+
+# ПРАВИЛЬНЫЙ КОД
+# Мы говорим: "Из папки 'app', из файла 'main', импортируй get_app"
+from app.main import get_app
+
 app = get_app()
