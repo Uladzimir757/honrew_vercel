@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tr.terms_page_title }}{% endblock %}
+
+{% block content %}
+<div class="py-12 bg-slate-900 text-gray-300">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-glass rounded-2xl shadow-lg p-8 md:p-12">
+            <div class="prose prose-lg prose-invert max-w-none">
+                <h1>{{ tr.terms_page_title }}</h1>
+                {{ tr.user_agreement_content | safe }}
+            </div>
+            <div class="mt-8 pt-6 border-t border-slate-700">
+                <a href="{{ url_for('home') }}?lang={{ lang }}" class="text-blue-400 hover:text-blue-300">&larr; {{ tr.back_to_main }}</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

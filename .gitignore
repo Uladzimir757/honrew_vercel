@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Project-specific ignores
+/uploads/
+.DS_Store
+.workers/
+dist

@@ -1,0 +1,60 @@
+2025-08-30 14:36:55,771 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 14:40:53,757 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 15:33:34,797 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 15:38:28,026 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 15:38:35,799 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 15:50:03,852 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 15:50:10,230 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 16:08:59,237 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 16:13:32,746 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 16:22:21,476 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 16:22:28,456 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 21:52:01,686 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 21:54:21,072 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 21:54:26,202 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 21:57:43,924 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 21:57:49,407 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 22:04:50,010 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 22:04:55,797 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 22:22:20,566 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 22:22:30,760 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 22:37:56,534 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 22:38:03,344 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 22:41:53,553 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-30 22:42:02,911 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-31 11:44:22,909 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-31 11:44:27,204 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-31 11:45:38,759 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-31 11:45:41,672 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-31 11:50:14,661 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-31 11:50:19,434 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-31 12:21:08,907 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-31 14:50:43,393 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-31 14:53:02,533 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-31 14:53:07,985 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-08-31 14:57:10,103 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-09-02 00:45:51,067 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-09-02 07:42:45,710 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-09-02 07:42:55,050 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-09-02 21:56:37,792 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-09-02 21:57:21,945 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-09-02 21:57:29,235 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-09-02 22:22:17,141 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-09-08 22:51:04,856 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-09-08 23:30:12,686 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-09-08 23:30:15,222 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-09-09 06:39:21,628 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-09-09 06:39:31,211 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honest_reviews
+2025-09-09 21:58:25,974 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honestreviews1
+2025-09-09 22:05:00,808 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honestreviews1
+2025-09-09 22:05:06,351 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honestreviews1
+2025-09-09 22:05:13,388 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honestreviews1
+2025-09-09 22:26:47,534 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honestreviews1
+2025-09-09 22:28:13,662 - passlib.handlers.bcrypt - WARNING - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "D:\pro\project-root\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-09-09 22:56:14,415 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost/honestreviews1
+2025-09-09 22:56:20,390 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost/honestreviews1

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" class="h-full bg-slate-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title or tr.title }}</title>
+    
+    <meta name="description" content="{{ meta_description or tr.default_meta_description }}">
+    {% block meta_tags %}{% endblock meta_tags %}
+
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', path='apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', path='favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', path='favicon-16x16.png') }}">
+    <link rel="manifest" href="{{ url_for('static', path='site.webmanifest') }}">
+
+    <link href="{{ url_for('static', path='css/output.css') }}" rel="stylesheet">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        .bg-glass {
+            background-color: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        body {
+            position: relative;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            background-image: url("{{ url_for('static', path='backgrounds/' + (background_image or 'index.jpg')) }}");
+        }
+        
+        /* ИЗМЕНЕНИЕ 3: Убираем body::before, так как фон шапки и подвала теперь задается напрямую */
+
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+        .font-roboto { font-family: 'Roboto', sans-serif; }
+        
+        .custom-header-footer {
+            background-color: rgba(15, 23, 42, 0.859); /* slate-800 с ~90% непрозрачности */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+<body class="h-full text-white font-roboto bg-slate-800" {% block body_attributes %}{% endblock %}>
+
+    <div class="relative min-h-screen flex flex-col">
+        <header class="sticky top-0 z-50 border-b border-slate-700 custom-header-footer">
+            <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center">
+                        <a href="/?lang={{ lang }}" class="flex-shrink-0 font-bold text-white text-xl font-montserrat">
+                            Honest<span class="text-blue-400">Reviews</span>
+                        </a>
+                        <div class="hidden md:block">
+                            <div class="ml-10 flex items-baseline space-x-4">
+                                <a href="/category/real-estate?lang={{ lang }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr.nav_real_estate }}</a>
+                                <a href="/category/auto?lang={{ lang }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr.nav_auto }}</a>
+                                <a href="/category/services?lang={{ lang }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr.nav_services }}</a>
+                                <a href="/live?lang={{ lang }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr.live }}</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-4 flex items-center md:ml-6">
+                            {% if user %}
+                                {% if user.is_admin %}
+                                <a href="/admin?lang={{ lang }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr.nav_admin }}</a>
+                                {% endif %}
+                                <a href="/profile?lang={{ lang }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr.profile }}</a>
+                                <a href="/logout?lang={{ lang }}" class="bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">{{ tr.logout }}</a>
+                            {% else %}
+                                <a href="/login?lang={{ lang }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr.login }}</a>
+                                <a href="/register?lang={{ lang }}" class="ml-4 bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">{{ tr.register }}</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="-mr-2 flex md:hidden">
+                        <button type="button" id="mobile-menu-button" class="bg-slate-800 inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-slate-700 focus:outline-none">
+                            <span class="sr-only">Open main menu</span>
+                            <svg class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                            <svg class="hidden h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="md:hidden hidden bg-slate-800 border-b border-slate-700" id="mobile-menu">
+                <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                    <a href="/category/real-estate?lang={{ lang }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.nav_real_estate }}</a>
+                    <a href="/category/auto?lang={{ lang }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.nav_auto }}</a>
+                    <a href="/category/services?lang={{ lang }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.nav_services }}</a>
+                    <a href="/live?lang={{ lang }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.live }}</a>
+                    <hr class="border-slate-700 my-2">
+                    {% if user %}
+                        {% if user.is_admin %}
+                        <a href="/admin" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.nav_admin }}</a>
+                        {% endif %}
+                        <a href="/profile?lang={{ lang }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.profile }}</a>
+                        <a href="/logout?lang={{ lang }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.logout }}</a>
+                    {% else %}
+                        <a href="/login?lang={{ lang }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.login }}</a>
+                        <a href="/register?lang={{ lang }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.register }}</a>
+                    {% endif %}
+                </div>
+            </div>
+        </header>
+        
+        <main class="flex-grow pb-32">
+            <div class="absolute inset-0 -z-10">
+                <img src="{{ url_for('static', path='backgrounds/' + (background_image or 'index.jpg')) }}" alt="" class="h-full w-full object-cover fixed">
+            </div>
+            
+            {% if flash %}
+             <div class="fixed top-20 right-4 z-50 p-4 rounded-md shadow-lg {{ 'bg-green-600' if flash.category == 'success' else 'bg-red-600' }}">
+                <p class="text-white font-medium">{{ flash.message }}</p>
+            </div>
+            {% endif %}
+            
+            <div class="relative z-0">
+                 {% block content %}{% endblock %}
+            </div>
+        </main>
+        
+        <footer class="sticky bottom-0 z-40 border-t border-slate-700 custom-header-footer">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <div class="flex flex-col sm:flex-row justify-between items-center text-center sm:text-left">
+                    <p class="text-sm text-gray-400 mb-4 sm:mb-0">
+                        {{ tr.footer_copyright }}
+                    </p>
+                    <div class="flex items-center space-x-6">
+                        <a href="/terms?lang={{ lang }}" class="text-sm text-gray-400 hover:text-white">{{ tr.footer_terms }}</a>
+                        <a href="/privacy?lang={{ lang }}" class="text-sm text-gray-400 hover:text-white">{{ tr.footer_privacy }}</a>
+                        <a href="/contact?lang={{ lang }}" class="text-sm text-gray-400 hover:text-white">{{ tr.footer_contact }}</a>
+                    </div>
+                </div>
+                <div class="flex justify-center sm:justify-end items-center space-x-4 mt-4 text-sm">
+                    <a href="?lang=ru" class="{% if lang == 'ru' %}text-white font-bold{% else %}text-gray-400 hover:text-white{% endif %}">RU</a>
+                    <a href="?lang=en" class="{% if lang == 'en' %}text-white font-bold{% else %}text-gray-400 hover:text-white{% endif %}">EN</a>
+                    <a href="?lang=pl" class="{% if lang == 'pl' %}text-white font-bold{% else %}text-gray-400 hover:text-white{% endif %}">PL</a>
+                </div>
+            </div>
+        </footer>
+        
+        <script src="{{ url_for('static', path='js/main.js') }}"></script>
+        <script>
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const icons = mobileMenuButton.querySelectorAll('svg');
+
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                    icons[0].classList.toggle('hidden');
+                    icons[1].classList.toggle('hidden');
+                });
+            }
+        </script>
+    </div>
+</body>
+</html>

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .rating { display: inline-block; }
+    .rating input { display: none; }
+    .rating label {
+        float: right;
+        cursor: pointer;
+        color: #4A5568; /* Цвет пустой звезды */
+        transition: color 0.2s;
+    }
+    .rating label:before {
+        content: '★';
+        font-size: 2rem;
+    }
+    .rating input:checked ~ label,
+    .rating label:hover,
+    .rating label:hover ~ label {
+        color: #FBBF24; /* Цвет заполненной/активной звезды */
+    }
+</style>
+
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="max-w-3xl mx-auto bg-glass rounded-2xl shadow-lg p-8">
+        <h2 class="text-3xl font-bold text-white text-center mb-8">{{ tr.upload_page_title }}</h2>
+        <form action="/upload?lang={{ lang }}" method="POST" enctype="multipart/form-data" class="space-y-6 upload-form">
+
+            <div class="text-center mb-8">
+                <p class="text-slate-300">Хотите записать видео прямо сейчас?</p>
+                <a href="/record?lang={{ lang }}" class="inline-block mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition">
+                    Перейти к записи с камеры
+                 </a>
+            </div>
+            <hr class="border-slate-700 my-8">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="what" class="block text-sm font-medium text-gray-300">{{ tr.upload_what_label }}</label>
+                    <input type="text" name="what" id="what" required
+                        class="mt-1 block w-full bg-gray-700/50 text-white rounded-md border-gray-600 focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                </div>
+                <div>
+                    <label for="where" class="block text-sm font-medium text-gray-300">{{ tr.upload_where_label
+                        }}</label>
+                    <input type="text" name="where" id="where" required
+                        class="mt-1 block w-full bg-gray-700/50 text-white rounded-md border-gray-600 focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                </div>
+            </div>
+            
+
+            <div>
+                <label for="title" class="block text-sm font-medium text-gray-300">{{ tr.upload_title_label }}</label>
+                <input type="text" name="title" id="title" required
+                    class="mt-1 block w-full bg-gray-700/50 text-white rounded-md border-gray-600 focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+            </div>
+
+            <div>
+                <label for="description" class="block text-sm font-medium text-gray-300">{{ tr.upload_description_label
+                    }}</label>
+                <textarea id="description" name="description" rows="4" required
+                    class="mt-1 block w-full bg-gray-700/50 text-white rounded-md border-gray-600 focus:ring-blue-500 focus:border-blue-500 shadow-sm"></textarea>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="category" class="block text-sm font-medium text-gray-300">{{ tr.upload_category_label
+                        }}</label>
+                    <select id="category" name="category" required
+                        class="mt-1 block w-full bg-gray-700 text-white rounded-md border-gray-600 focus:ring-blue-500 focus:border-blue-500 shadow-sm py-2 px-3">
+                        <option value="real-estate" {% if selected_category == 'real-estate' %}selected{% endif %}>{{ tr.nav_real_estate }}</option>
+                        <option value="auto" {% if selected_category == 'auto' %}selected{% endif %}>{{ tr.nav_auto }}</option>
+                        <option value="services" {% if selected_category == 'services' %}selected{% endif %}>{{ tr.nav_services }}</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">{{ tr.upload_rating_label }}</label>
+                    <div class="rating">
+                        <input type="radio" id="star5" name="rating" value="5" required><label for="star5" title="5 stars"></label>
+                        <input type="radio" id="star4" name="rating" value="4"><label for="star4" title="4 stars"></label>
+                        <input type="radio" id="star3" name="rating" value="3"><label for="star3" title="3 stars"></label>
+                        <input type="radio" id="star2" name="rating" value="2"><label for="star2" title="2 stars"></label>
+                        <input type="radio" id="star1" name="rating" value="1"><label for="star1" title="1 star"></label>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label for="media_file" class="block text-sm font-medium text-gray-300">{{ tr.upload_file_label
+                    }}</label>
+                <input type="file" name="media_file" id="media_file" required accept="video/*,image/*"
+                    class="mt-1 block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            </div>
+
+            <div class="pt-4">
+                <button type="submit"
+                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800">
+                    {{ tr.upload_button }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="upload-overlay" style="display: none;" class="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50">
+    <div class="spinner"></div>
+    <p class="text-white text-lg mt-4">Загрузка вашего отзыва... Пожалуйста, подождите.</p>
+</div>
+
+<script src="{{ url_for('static', path='js/upload-progress.js') }}"></script>
+{% endblock %}

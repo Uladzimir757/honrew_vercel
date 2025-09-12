@@ -1,0 +1,108 @@
+{% extends "admin/base.html" %}
+
+{% block title %}
+    {{ tr.admin_reviews_title }}
+{% endblock %}
+
+{% block admin_content %}
+<form method="GET" class="mb-6">
+    <div class="flex flex-col sm:flex-row gap-4">
+        <div class="flex-grow">
+            <input type="search" name="q" value="{{ query or '' }}" placeholder="{{ tr.admin_search_by_review }}" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <div>
+            <select name="status" class="w-full sm:w-auto px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <option value="all" {% if current_status == 'all' %}selected{% endif %}>{{ tr.admin_all_statuses }}</option>
+                <option value="pending_review" {% if current_status == 'pending_review' %}selected{% endif %}>{{ tr.admin_pending }}</option>
+                <option value="published" {% if current_status == 'published' %}selected{% endif %}>{{ tr.admin_published }}</option>
+                <option value="rejected" {% if current_status == 'rejected' %}selected{% endif %}>{{ tr.admin_rejected }}</option>
+            </select>
+        </div>
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">{{ tr.admin_search_button }}</button>
+    </div>
+</form>
+
+<div class="flow-root">
+    <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+        <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+            <table class="min-w-full divide-y divide-slate-700 hidden md:table">
+                <thead>
+                    <tr>
+                        <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-0">{{ tr.admin_table_id }}</th>
+                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">{{ tr.admin_table_review_object }}</th>
+                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">{{ tr.admin_table_category }}</th>
+                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">{{ tr.admin_table_author }}</th>
+                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">{{ tr.admin_table_status }}</th>
+                        <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-0 text-right">{{ tr.admin_table_actions }}</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for review in reviews %}
+                    <tr>
+                        <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0">{{ review.id }}</td>
+                        <td class="px-3 py-4 text-sm text-gray-300 truncate max-w-xs">{{ review.what }}</td>
+                        <td class="px-3 py-4 text-sm text-gray-300">{{ review.category }}</td>
+                        <td class="px-3 py-4 text-sm text-gray-300 truncate max-w-xs">{{ review.author_email }}</td>
+                        <td class="px-3 py-4 text-sm">
+                            {% if review.status == 'published' %}
+                                <span class="inline-flex items-center rounded-md bg-green-500/10 px-2 py-1 text-xs font-medium text-green-400 ring-1 ring-inset ring-green-500/20">{{ tr.admin_published }}</span>
+                            {% elif review.status == 'pending_review' %}
+                                <span class="inline-flex items-center rounded-md bg-yellow-400/10 px-2 py-1 text-xs font-medium text-yellow-300 ring-1 ring-inset ring-yellow-400/20">{{ tr.admin_pending }}</span>
+                            {% elif review.status == 'rejected' %}
+                                <span class="inline-flex items-center rounded-md bg-red-500/10 px-2 py-1 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-500/20">{{ tr.admin_rejected }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="relative py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                            <div class="flex items-center justify-end space-x-4">
+                                <a href="/video/{{ review.id }}?lang={{ lang }}" target="_blank" class="text-blue-400 hover:text-blue-300">{{ tr.admin_action_view }}</a>
+                                <a href="/video/edit/{{ review.id }}?lang={{ lang }}" class="text-blue-400 hover:text-blue-300">{{ tr.admin_action_edit }}</a>
+                                {% if review.status != 'published' %}
+                                    <form action="/admin/reviews/{{ review.id }}/approve" method="post" class="inline">
+                                        <button type="submit" class="text-green-400 hover:text-green-300">{{ tr.admin_approve }}</button>
+                                    </form>
+                                {% endif %}
+                                {% if review.status != 'rejected' %}
+                                    <form action="/admin/reviews/{{ review.id }}/reject" method="post" class="inline">
+                                        <button type="submit" class="text-red-400 hover:text-red-300">{{ tr.admin_reject }}</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="md:hidden space-y-4">
+                {% for review in reviews %}
+                <div class="bg-slate-800 rounded-lg p-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-bold text-white">{{ review.what }}</p>
+                            <p class="text-xs text-gray-400">{{ review.author_email }}</p>
+                        </div>
+                        <p class="text-xs text-gray-500">{{ tr.admin_table_id }}: {{ review.id }}</p>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-slate-700 flex justify-between items-center">
+                         <div>
+                            {% if review.status == 'published' %}<span class="inline-flex items-center rounded-md bg-green-500/10 px-2 py-1 text-xs font-medium text-green-400 ring-1 ring-inset ring-green-500/20">{{ tr.admin_published }}</span>
+                            {% elif review.status == 'pending_review' %}<span class="inline-flex items-center rounded-md bg-yellow-400/10 px-2 py-1 text-xs font-medium text-yellow-300 ring-1 ring-inset ring-yellow-400/20">{{ tr.admin_pending }}</span>
+                            {% elif review.status == 'rejected' %}<span class="inline-flex items-center rounded-md bg-red-500/10 px-2 py-1 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-500/20">{{ tr.admin_rejected }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center space-x-4 text-sm">
+                             <a href="/video/{{ review.id }}?lang={{ lang }}" target="_blank" class="text-blue-400 hover:text-blue-300">{{ tr.admin_action_view }}</a>
+                             <a href="/video/edit/{{ review.id }}?lang={{ lang }}" class="text-blue-400 hover:text-blue-300">{{ tr.admin_action_edit }}</a>
+                            {% if review.status != 'published' %}<form action="/admin/reviews/{{ review.id }}/approve" method="post" class="inline"><button type="submit" class="text-green-400 hover:text-green-300">{{ tr.admin_approve }}</button></form>{% endif %}
+                            {% if review.status != 'rejected' %}<form action="/admin/reviews/{{ review.id }}/reject" method="post" class="inline"><button type="submit" class="text-red-400 hover:text-red-300">{{ tr.admin_reject }}</button></form>{% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-center py-8 text-gray-400">{{ tr.admin_reviews_not_found }}</p>
+                {% endfor %}
+            </div>
+            {% include 'partials/pagination.html' %}
+        </div>
+    </div>
+</div>
+{% endblock %}

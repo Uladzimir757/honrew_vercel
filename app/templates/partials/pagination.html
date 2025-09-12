@@ -1,0 +1,23 @@
+{% if total_pages > 1 %}
+<div class="flex items-center justify-center space-x-2 mt-12">
+    {% if current_page > 1 %}
+    <a href="{{ request.url.include_query_params(page=current_page - 1) }}" class="px-4 py-2 bg-slate-800 text-white rounded-md hover:bg-blue-600 transition-colors">&laquo;</a>
+    {% endif %}
+
+    {% for page_num in range(1, total_pages + 1) %}
+    <a href="{{ request.url.include_query_params(page=page_num) }}" 
+       class="px-4 py-2 rounded-md transition-colors 
+              {% if page_num == current_page %}
+              bg-blue-600 text-white
+              {% else %}
+              bg-slate-800 text-gray-300 hover:bg-slate-700
+              {% endif %}">
+        {{ page_num }}
+    </a>
+    {% endfor %}
+
+    {% if current_page < total_pages %}
+    <a href="{{ request.url.include_query_params(page=current_page + 1) }}" class="px-4 py-2 bg-slate-800 text-white rounded-md hover:bg-blue-600 transition-colors">&raquo;</a>
+    {% endif %}
+</div>
+{% endif %}

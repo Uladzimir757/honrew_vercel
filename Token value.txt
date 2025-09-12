@@ -1,0 +1,7 @@
+Token value
+kCjptWirndXkaxDOgSyqFViVxH3XA1h_Qo2-AGE7
+
+
+
+Use jurisdiction-specific endpoints for S3 clients:
+https://94860bebedbb33cb5efe18854079af62.r2.cloudflarestorage.com

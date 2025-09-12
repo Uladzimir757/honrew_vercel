@@ -1,0 +1,35 @@
+# Имя вашего воркера
+name = "honest-reviews"
+
+# Главный файл воркера, который будет лежать в папке dist после сборки
+main = "dist/index.py"
+
+# Настройки совместимости для Python Workers
+compatibility_date = "2024-03-20"
+compatibility_flags = ["python_workers"]
+
+# Указываем wrangler'у, что перед запуском нужно выполнить наш сборочный скрипт
+[build]
+command = "python build.py"
+
+# Указываем wrangler'у, где лежат статические файлы (CSS, JS, картинки)
+# Ключ 'bucket' — это современное название для папки с ассетами.
+# Путь "./dist/app/static" — верный, так как наш build.py скопирует статику именно туда.
+[site]
+bucket = "./dist/app/static"
+
+# --- Привязки к сервисам Cloudflare (bindings) ---
+
+[[d1_databases]]
+binding = "DB"
+database_name = "videorev"
+database_id = "1570eccd-d5bc-437a-aec3-9ecb1a8039e4"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "videos-review"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "a844036c04604cada5759a4259b15393"

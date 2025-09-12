@@ -1,0 +1,85 @@
+{% extends "admin/base.html" %}
+
+{% block title %}
+    {{ tr.admin_users_title }}
+{% endblock %}
+
+{% block admin_content %}
+<form method="GET" class="mb-6">
+    <div class="flex">
+        <input type="search" name="q" value="{{ query or '' }}" placeholder="{{ tr.admin_search_by_email }}" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-l-md text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700">{{ tr.admin_search_button }}</button>
+    </div>
+</form>
+
+<div class="flow-root">
+    <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+        <table class="min-w-full divide-y divide-slate-700 hidden md:table">
+          <thead>
+            <tr>
+              <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-0">{{ tr.admin_table_id }}</th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">{{ tr.admin_table_email }}</th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">{{ tr.admin_table_status }}</th>
+              <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-0 text-right">{{ tr.admin_table_actions }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800">
+            {% for u in users %}
+            <tr>
+              <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0">{{ u.id }}</td>
+              <td class="px-3 py-4 text-sm text-gray-300">{{ u.email }}</td>
+              <td class="px-3 py-4 text-sm text-gray-300 space-x-2">
+                {% if u.is_admin %}
+                <span class="inline-flex items-center rounded-md bg-red-500/10 px-2 py-1 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-500/20">{{ tr.admin_user_role_admin }}</span>
+                {% endif %}
+                {% if u.user_type == 'company' %}
+                <span class="inline-flex items-center rounded-md bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-400 ring-1 ring-inset ring-blue-500/20">{{ tr.user_type_company }}</span>
+                {% else %}
+                <span class="inline-flex items-center rounded-md bg-gray-400/10 px-2 py-1 text-xs font-medium text-gray-400 ring-1 ring-inset ring-gray-400/20">{{ tr.user_type_client }}</span>
+                {% endif %}
+              </td>
+              <td class="relative py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                {% if u.id != user.id %}
+                <form action="/admin/users/{{ u.id }}/delete" method="POST" onsubmit="return confirm('{{ tr.admin_user_delete_confirm }}');">
+                    <button type="submit" class="text-red-500 hover:text-red-400">{{ tr.admin_action_delete }}</button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <div class="md:hidden space-y-4">
+            {% for u in users %}
+            <div class="bg-slate-800 rounded-lg p-4">
+                <p class="font-medium text-white">{{ u.email }}</p>
+                <div class="mt-2 pt-2 border-t border-slate-700 flex justify-between items-center">
+                    <div class="space-x-2">
+                        {% if u.is_admin %}
+                            <span class="inline-flex items-center rounded-md bg-red-500/10 px-2 py-1 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-500/20">{{ tr.admin_user_role_admin }}</span>
+                        {% endif %}
+                        {% if u.user_type == 'company' %}
+                            <span class="inline-flex items-center rounded-md bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-400 ring-1 ring-inset ring-blue-500/20">{{ tr.user_type_company }}</span>
+                        {% else %}
+                             <span class="inline-flex items-center rounded-md bg-gray-400/10 px-2 py-1 text-xs font-medium text-gray-400 ring-1 ring-inset ring-gray-400/20">{{ tr.user_type_client }}</span>
+                        {% endif %}
+                    </div>
+                     {% if u.id != user.id %}
+                        <form action="/admin/users/{{ u.id }}/delete" method="POST" onsubmit="return confirm('{{ tr.admin_user_delete_confirm }}');">
+                            <button type="submit" class="text-red-500 hover:text-red-400 text-sm">{{ tr.admin_action_delete }}</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <p class="text-center py-8 text-gray-400">{{ tr.admin_users_not_found }}</p>
+            {% endfor %}
+        </div>
+
+        {% include 'partials/pagination.html' %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

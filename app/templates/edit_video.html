@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-12">
+    <div class="max-w-2xl mx-auto bg-glass p-8 rounded-2xl shadow-lg">
+        <h2 class="text-2xl font-bold text-white text-center mb-6">{{ tr.edit_page_title }}</h2>
+        <form action="/video/edit/{{ video.id }}?lang={{ lang }}" method="post" class="space-y-6">
+
+            <div>
+                <label for="what" class="block text-sm font-medium text-gray-300">{{ tr.search_what }}</label>
+                <input type="text" name="what" id="what" value="{{ video.what }}"
+                    class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="{{ tr.edit_what_placeholder }}" required>
+            </div>
+
+            <div>
+                <label for="where" class="block text-sm font-medium text-gray-300">{{ tr.search_where }}</label>
+                <input type="text" name="where" id="where" value="{{ video.where }}"
+                    class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="{{ tr.edit_where_placeholder }}" required>
+            </div>
+
+            <div>
+                <label for="title" class="block text-sm font-medium text-gray-300">{{ tr.upload_title_label }}</label>
+                <input type="text" name="title" id="title" value="{{ video.title }}"
+                    class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="{{ tr.upload_title_placeholder }}">
+            </div>
+
+            <div>
+                <label for="description" class="block text-sm font-medium text-gray-300">{{ tr.upload_description_label
+                    }}</label>
+                <textarea name="description" id="description" rows="4"
+                    class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="{{ tr.upload_description_placeholder }}">{{ video.description }}</textarea>
+            </div>
+
+            <div>
+                <label for="category" class="block text-sm font-medium text-gray-300">{{ tr.upload_category_label
+                    }}</label>
+                <select name="category" id="category"
+                    class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <option value="real-estate" {% if video.category=='real-estate' %}selected{% endif %}>{{
+                        tr.nav_real_estate }}</option>
+                    <option value="auto" {% if video.category=='auto' %}selected{% endif %}>{{ tr.nav_auto }}</option>
+                    <option value="services" {% if video.category=='services' %}selected{% endif %}>{{ tr.nav_services
+                        }}</option>
+                </select>
+            </div>
+
+            <div>
+                <button type="submit"
+                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    {{ tr.save_changes }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+# Используйте НОВЫЙ сгенерированный ключ
+SECRET_KEY="your_new_strong_secret_key"
+
+# --- Данные для ЛОКАЛЬНОЙ базы данных ---
+DATABASE_URL="postgresql+asyncpg://postgres:your_local_db_password@localhost/honest_reviews"
+
+# --- НОВЫЕ ключи для Cloudflare R2 / S3 ---
+AWS_ACCESS_KEY_ID="your_new_r2_access_key"
+AWS_SECRET_ACCESS_KEY="your_new_r2_secret_key"
+S3_ENDPOINT_URL="https://....r2.cloudflarestorage.com"
+S3_BUCKET_NAME="videos-review"
+R2_PUBLIC_URL="https://pub-....r2.dev"
+
+# --- НОВЫЕ настройки почты ---
+MAIL_USERNAME=wowvideoko@gmail.com
+MAIL_PASSWORD=your_new_google_app_password
+MAIL_FROM=wowvideoko@gmail.com
+MAIL_PORT=587
+MAIL_SERVER=smtp.gmail.com
+MAIL_STARTTLS=True
+MAIL_SSL_TLS=False
