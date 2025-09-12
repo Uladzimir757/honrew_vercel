@@ -1,4 +1,3 @@
-# Файл: api/index.py (Финальная версия)
+# Файл: api/index.py
 from main import get_app
-
 app = get_app()
