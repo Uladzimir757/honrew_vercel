@@ -8,3 +8,4 @@ psycopg2-binary   # драйвер для Postgres
 boto3             # для работы с R2 как с S3
 Flask
 pydantic-settings
+passlib
