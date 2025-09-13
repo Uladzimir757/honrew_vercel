@@ -152,6 +152,38 @@ def api_handle_comment(video_id: int):
             
     return jsonify({"status": "success", "message": "Comment submitted for review."})
 
+@videos_bp.route("/live")
+def live_page():
+    """
+    Отображает страницу с последними добавленными отзывами (живая лента).
+    """
+    page = request.args.get('page', 1, type=int)
+    offset = (page - 1) * settings.ITEMS_PER_PAGE
+
+    # Запрос для подсчета всех опубликованных видео
+    count_query = "SELECT COUNT(*) AS total FROM videos WHERE status = 'published'"
+    count_result = g.db.fetch_one(count_query)
+    total_items = count_result['total'] if count_result else 0
+    total_pages = math.ceil(total_items / settings.ITEMS_PER_PAGE) if total_items > 0 else 0
+
+    # Запрос для получения порции видео для текущей страницы
+    select_query = """
+        SELECT v.*, u.email as author_email, u.id as user_id
+        FROM videos v JOIN users u ON v.user_id = u.id
+        WHERE v.status = 'published'
+        ORDER BY v.created_at DESC
+        LIMIT %s OFFSET %s
+    """
+    result_videos = g.db.fetch_all(select_query, (settings.ITEMS_PER_PAGE, offset))
+
+    return render_template(
+        "live.html",
+        videos=result_videos,
+        current_page=page,
+        total_pages=total_pages,
+        background_image="index.jpg"
+    )
+
 @videos_bp.route("/category/<category_name>")
 def category_page(category_name: str):
     page = request.args.get('page', 1, type=int)
