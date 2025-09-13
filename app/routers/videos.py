@@ -141,8 +141,11 @@ def category_page(category_name: str):
     page = request.args.get('page', 1, type=int)
     offset = (page - 1) * settings.ITEMS_PER_PAGE
     
-    count_query = "SELECT COUNT(*) FROM videos WHERE category = ?1 AND status = 'published'"
-    total_items = g.db.fetch_val(count_query, (category_name,))
+    count_query = "SELECT COUNT(*) FROM videos WHERE category = %s AND status = 'published'"
+    # Сначала получаем одну строку (результат будет в виде кортежа, например, (25,))
+    count_result = g.db.fetch_one(count_query, (category_name,))
+# Затем извлекаем из кортежа само число. Если ничего не найдено, будет 0.
+    total_items = count_result[0] if count_result else 0
     total_pages = math.ceil(total_items / settings.ITEMS_PER_PAGE) if total_items > 0 else 0
 
     select_query = """
