@@ -28,7 +28,7 @@ def handle_registration():
             session["flash"] = {"category": "error", "message": g.tr["error_password_too_weak"]}
             return redirect(url_for('auth.handle_registration', lang=session.get('lang')))
 
-        existing_user = g.db.fetch_one("SELECT id FROM users WHERE email = ?1", (email,))
+        existing_user = g.db.fetch_one("SELECT id FROM users WHERE email = %s", (email,))
         if existing_user:
             session["flash"] = {"category": "error", "message": g.tr["error_user_exists"]}
             return redirect(url_for('auth.handle_registration', lang=session.get('lang')))
@@ -38,12 +38,13 @@ def handle_registration():
 
         query = """
             INSERT INTO users (email, hashed_password, verification_token, user_type, is_admin, is_verified) 
-            VALUES (?1, ?2, ?3, ?4, 0, 0)
+            VALUES (%s, %s, %s, %s, %s, %s)
         """
-        g.db.execute(query, (email, hashed_password, verification_token, user_type))
+        g.db.execute(query, (email, hashed_password, verification_token, user_type, False, False))
 
         verification_link = url_for('auth.verify_email', token=verification_token, lang=session.get('lang'), _external=True)
         send_email_notification(
+            request=request,
             recipients=[email], subject_key="email_verification_subject",
             body_key="email_verification_body",
             template_vars={"verification_link": verification_link}
@@ -56,11 +57,10 @@ def handle_registration():
 
 @auth_bp.route("/verify/<token>")
 def verify_email(token: str):
-    query = "UPDATE users SET is_verified = 1, verification_token = NULL WHERE verification_token = ?1"
-    result = g.db.execute(query, (token,))
+    query = "UPDATE users SET is_verified = %s, verification_token = NULL WHERE verification_token = %s"
+    cursor = g.db.execute(query, (True, token))
     
-    changes = result.get('meta', {}).get('changes', 0)
-    if changes > 0:
+    if cursor.rowcount > 0:
         session["flash"] = {"category": "success", "message": g.tr["verification_success"]}
     return redirect(url_for('auth.handle_login', lang=session.get('lang')))
 
@@ -70,7 +70,7 @@ def handle_login():
         email = request.form.get('email')
         password = request.form.get('password')
         
-        user_data = g.db.fetch_one("SELECT * FROM users WHERE email = ?1", (email,))
+        user_data = g.db.fetch_one("SELECT * FROM users WHERE email = %s", (email,))
         
         if not user_data or not verify_password(password, user_data['hashed_password']):
             session["flash"] = {"category": "error", "message": g.tr["error_login_failed"]}
@@ -101,19 +101,20 @@ def handle_logout():
 def handle_forgot_password():
     if request.method == 'POST':
         email = request.form.get('email')
-        user = g.db.fetch_one("SELECT * FROM users WHERE email = ?1", (email,))
+        user = g.db.fetch_one("SELECT * FROM users WHERE email = %s", (email,))
         
         if user:
             token = secrets.token_urlsafe(32)
             expires = datetime.now(timezone.utc) + timedelta(hours=1)
             
             g.db.execute(
-                "UPDATE users SET password_reset_token = ?1, password_reset_expires = ?2 WHERE id = ?3",
+                "UPDATE users SET password_reset_token = %s, password_reset_expires = %s WHERE id = %s",
                 (token, expires.isoformat(), user['id'])
             )
             
             reset_link = url_for('auth.reset_password_page', token=token, lang=session.get('lang'), _external=True)
             send_email_notification(
+                request=request,
                 recipients=[email], subject_key="email_reset_subject",
                 body_key="email_reset_body",
                 template_vars={"reset_link": reset_link}
@@ -128,7 +129,7 @@ def handle_forgot_password():
 def reset_password_page(token: str):
     now_utc_iso = datetime.now(timezone.utc).isoformat()
     user = g.db.fetch_one(
-        "SELECT * FROM users WHERE password_reset_token = ?1 AND password_reset_expires > ?2", 
+        "SELECT * FROM users WHERE password_reset_token = %s AND password_reset_expires > %s", 
         (token, now_utc_iso)
     )
 
@@ -150,7 +151,7 @@ def reset_password_page(token: str):
 
         hashed_password = get_password_hash(password)
         g.db.execute(
-            "UPDATE users SET hashed_password = ?1, password_reset_token = NULL, password_reset_expires = NULL WHERE id = ?2",
+            "UPDATE users SET hashed_password = %s, password_reset_token = NULL, password_reset_expires = NULL WHERE id = %s",
             (hashed_password, user['id'])
         )
         

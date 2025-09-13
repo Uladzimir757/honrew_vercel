@@ -3,7 +3,7 @@ import os
 import uuid
 import math
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from flask import (Blueprint, request, session, g, render_template,
                    redirect, url_for)
 
@@ -17,7 +17,7 @@ users_bp = Blueprint('users', __name__)
 @users_bp.route("/profile", methods=['GET'])
 @login_required
 def profile_page():
-    query_videos = "SELECT * FROM videos WHERE user_id = ?1 ORDER BY id DESC"
+    query_videos = "SELECT * FROM videos WHERE user_id = %s ORDER BY id DESC"
     user_videos = g.db.fetch_all(query_videos, (g.user["id"],))
 
     return render_template("profile.html",
@@ -34,12 +34,12 @@ def handle_profile_update():
     lang = session.get('lang', 'en')
     
     if username != g.user.get("username"):
-        query_existing_user = "SELECT id FROM users WHERE username = ?1 AND id != ?2"
+        query_existing_user = "SELECT id FROM users WHERE username = %s AND id != %s"
         if g.db.fetch_one(query_existing_user, (username, g.user["id"])):
             session["flash"] = {"category": "error", "message": g.tr["profile_username_taken"]}
             return redirect(url_for('users.profile_page', lang=lang))
 
-    query = "UPDATE users SET username = ?1, bio = ?2 WHERE id = ?3"
+    query = "UPDATE users SET username = %s, bio = %s WHERE id = %s"
     g.db.execute(query, (username, bio, g.user["id"]))
 
     session["flash"] = {"category": "success", "message": g.tr["profile_info_updated"]}
@@ -79,7 +79,7 @@ def handle_avatar_upload():
         except Exception as e:
              logger.warning(f"Ошибка удаления старого аватара из R2: {e}")
 
-    g.db.execute("UPDATE users SET avatar_filename = ?1 WHERE id = ?2", (unique_filename, g.user["id"]))
+    g.db.execute("UPDATE users SET avatar_filename = %s WHERE id = %s", (unique_filename, g.user["id"]))
     
     session["flash"] = {"category": "success", "message": g.tr["profile_avatar_updated"]}
     return redirect(url_for('users.profile_page', lang=lang))
@@ -102,7 +102,7 @@ def handle_password_change():
         return redirect(url_for('users.profile_page', lang=lang))
 
     hashed_password = get_password_hash(new_password)
-    g.db.execute("UPDATE users SET hashed_password = ?1 WHERE id = ?2", (hashed_password, g.user["id"]))
+    g.db.execute("UPDATE users SET hashed_password = %s WHERE id = %s", (hashed_password, g.user["id"]))
     
     session["flash"] = {"category": "success", "message": g.tr["profile_password_updated"]}
     return redirect(url_for('users.profile_page', lang=lang))
@@ -115,12 +115,13 @@ def request_profile_deletion():
     expires = datetime.now(timezone.utc) + timedelta(hours=1)
     
     g.db.execute(
-        "UPDATE users SET delete_token = ?1, delete_token_expires = ?2 WHERE id = ?3",
+        "UPDATE users SET delete_token = %s, delete_token_expires = %s WHERE id = %s",
         (token, expires.isoformat(), g.user["id"])
     )
     
     delete_link = url_for('users.confirm_profile_deletion', token=token, lang=lang, _external=True)
     send_email_notification(
+        request=request,
         recipients=[g.user["email"]],
         subject_key="email_delete_account_subject",
         body_key="email_delete_account_body",
@@ -134,7 +135,7 @@ def request_profile_deletion():
 def confirm_profile_deletion(token: str):
     lang = session.get('lang', 'en')
     now_utc_iso = datetime.now(timezone.utc).isoformat()
-    query = "SELECT * FROM users WHERE delete_token = ?1 AND delete_token_expires > ?2"
+    query = "SELECT * FROM users WHERE delete_token = %s AND delete_token_expires > %s"
     user_to_delete = g.db.fetch_one(query, (token, now_utc_iso))
 
     if not user_to_delete:
@@ -144,7 +145,7 @@ def confirm_profile_deletion(token: str):
     user_id_to_delete = user_to_delete["id"]
 
     try:
-        user_videos = g.db.fetch_all("SELECT filename, preview_filename FROM videos WHERE user_id = ?1", (user_id_to_delete,))
+        user_videos = g.db.fetch_all("SELECT filename, preview_filename FROM videos WHERE user_id = %s", (user_id_to_delete,))
         for video in user_videos:
             if video["filename"]: g.r2.delete(video["filename"])
             if video["preview_filename"]: g.r2.delete(video["preview_filename"])
@@ -153,7 +154,7 @@ def confirm_profile_deletion(token: str):
     except Exception as e:
         logger.error(f"Ошибка при удалении файлов пользователя {user_id_to_delete} из R2: {e}")
 
-    g.db.execute("DELETE FROM users WHERE id = ?1", (user_id_to_delete,))
+    g.db.execute("DELETE FROM users WHERE id = %s", (user_id_to_delete,))
     
     session.clear()
     session['lang'] = lang
@@ -163,22 +164,22 @@ def confirm_profile_deletion(token: str):
 @users_bp.route("/user/<int:user_id>")
 def user_profile_page(user_id: int):
     page = request.args.get('page', 1, type=int)
-    profile_user = g.db.fetch_one("SELECT * FROM users WHERE id = ?1", (user_id,))
+    profile_user = g.db.fetch_one("SELECT * FROM users WHERE id = %s", (user_id,))
     
     if not profile_user:
         return redirect(url_for('pages.read_root', lang=session.get('lang')))
 
     offset = (page - 1) * settings.ITEMS_PER_PAGE
     
-    count_query = "SELECT COUNT(*) FROM videos WHERE user_id = ?1 AND status = 'published'"
-    total_items = g.db.fetch_val(count_query, (user_id,))
+    count_query = "SELECT COUNT(*) AS total FROM videos WHERE user_id = %s AND status = 'published'"
+    total_items = g.db.fetch_one(count_query, (user_id,))['total']
     total_pages = math.ceil(total_items / settings.ITEMS_PER_PAGE) if total_items > 0 else 0
 
     query_videos = """
         SELECT v.*, u.email as author_email 
         FROM videos v JOIN users u ON v.user_id = u.id 
-        WHERE v.user_id = ?1 AND v.status = 'published'
-        ORDER BY v.id DESC LIMIT ?2 OFFSET ?3
+        WHERE v.user_id = %s AND v.status = 'published'
+        ORDER BY v.id DESC LIMIT %s OFFSET %s
     """
     result_videos = g.db.fetch_all(query_videos, (user_id, settings.ITEMS_PER_PAGE, offset))
     
