@@ -141,12 +141,11 @@ def category_page(category_name: str):
     page = request.args.get('page', 1, type=int)
     offset = (page - 1) * settings.ITEMS_PER_PAGE
     
-    count_query = "SELECT COUNT(*) FROM videos WHERE category = %s AND status = 'published'"
-    # Сначала получаем одну строку (результат будет в виде кортежа, например, (25,))
+    # Даем колонке имя 'total' с помощью 'AS total'
+    count_query = "SELECT COUNT(*) AS total FROM videos WHERE category = %s AND status = 'published'"
     count_result = g.db.fetch_one(count_query, (category_name,))
-# Затем извлекаем из кортежа само число. Если ничего не найдено, будет 0.
-    total_items = count_result[0] if count_result else 0
-    total_pages = math.ceil(total_items / settings.ITEMS_PER_PAGE) if total_items > 0 else 0
+    # Теперь обращаемся к результату по имени колонки 'total'
+    total_items = count_result['total'] if count_result else 0
 
     select_query = """
         SELECT v.*, u.email as author_email FROM videos v JOIN users u ON v.user_id = u.id
