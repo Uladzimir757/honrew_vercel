@@ -3,7 +3,7 @@
 import logging
 import json
 import requests  # Используем стандартную библиотеку requests вместо pyodide
-from fastapi import Request
+from flask import Request
 from app.config import settings # Предполагается, что у вас есть файл настроек
 
 # --- Настройка логирования ---
