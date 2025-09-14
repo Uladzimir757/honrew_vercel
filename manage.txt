@@ -1,0 +1,5 @@
+.\venv\Scripts\Activate.ps1
+
+python manage.py delete-user ваш_тестовый_email@example.com
+
+python manage.py verify-user ваш_админский_email@example.com
