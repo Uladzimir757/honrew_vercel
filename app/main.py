@@ -10,7 +10,6 @@ from app.routers import (auth_bp, pages_bp, videos_bp, users_bp,
                          complaints_bp, admin_bp)
 from app.dependencies import get_current_user
 
-# --- Класс для работы с базой данных ---
 class PostgresManager:
     def __init__(self, dsn):
         self.dsn = dsn
@@ -49,7 +48,6 @@ class PostgresManager:
             self._connection.close()
             self._connection = None
 
-# --- Основная функция создания приложения ---
 def get_app():
     app = Flask(__name__, 
                 static_folder='static', 
@@ -57,7 +55,6 @@ def get_app():
                 template_folder='templates')
     app.secret_key = settings.SECRET_KEY
 
-    # Регистрация всех Blueprint'ов
     app.register_blueprint(auth_bp)
     app.register_blueprint(pages_bp)
     app.register_blueprint(videos_bp)
@@ -67,31 +64,23 @@ def get_app():
 
     @app.before_request
     def before_request_handler():
-        # Создаем подключение к БД для каждого запроса
         g.db = PostgresManager(settings.DATABASE_URL)
         
-        # --- НОВАЯ ЛОГИКА ЗАГРУЗКИ ПЕРЕВОДОВ ---
         lang = request.args.get('lang', session.get('lang', 'ru'))
         if lang not in ['en', 'ru', 'pl']:
             lang = 'ru'
         session['lang'] = lang
         g.lang = lang
 
-        # Загружаем нужный JSON-файл
         translations_path = os.path.join(app.root_path, 'locales', f'{lang}.json')
         try:
             with open(translations_path, 'r', encoding='utf-8') as f:
                 g.tr = json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
-            g.tr = {} # Если файл не найден или ошибка, используем пустой словарь
-        # -----------------------------------------
+            g.tr = {}
         
-        # Получаем текущего пользователя
         g.user = get_current_user(g.db)
-        
-        # Передача flash-сообщений в контекст
         g.flash = session.pop('flash', None)
-
 
     @app.teardown_request
     def teardown_request_handler(exception=None):
@@ -101,7 +90,6 @@ def get_app():
 
     @app.context_processor
     def inject_global_vars():
-        # Эта функция делает переменные из `g` доступными во всех шаблонах
         return {
             'user': g.get('user'),
             'lang': g.get('lang'),
@@ -109,9 +97,7 @@ def get_app():
             'flash': g.get('flash'),
             'settings': settings
         }
-
     return app
 
-# --- Точка входа для Vercel ---
 if __name__ != "__main__":
     app = get_app()
