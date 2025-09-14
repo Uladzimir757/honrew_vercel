@@ -78,7 +78,8 @@ def handle_login():
         
         if not user_data['is_verified']:
             session["flash"] = {"category": "error", "message": g.tr["error_not_verified"]}
-            return redirect(url_for('auth.handle_login', lang=session.get('lang')))
+            # Передаем email в шаблон, чтобы показать ссылку на повторную отправку
+            return render_template("login.html", needs_verification=True, email=email)
 
         session["user"] = {"email": user_data['email'], "id": user_data['id']}
         session["flash"] = {"category": "success", "message": g.tr["login_success_message"]}
@@ -89,6 +90,30 @@ def handle_login():
 
     return render_template("login.html")
 
+# НОВЫЙ МАРШРУТ
+@auth_bp.route("/resend-verification/<email>")
+def resend_verification_email(email: str):
+    lang = session.get('lang', 'en')
+    user = g.db.fetch_one("SELECT * FROM users WHERE email = %s", (email,))
+
+    if user and not user['is_verified']:
+        new_token = secrets.token_urlsafe(32)
+        g.db.execute("UPDATE users SET verification_token = %s WHERE email = %s", (new_token, email))
+        
+        verification_link = url_for('auth.verify_email', token=new_token, lang=lang, _external=True)
+        send_email_notification(
+            request=request,
+            recipients=[email], subject_key="email_verification_subject",
+            body_key="email_verification_body",
+            template_vars={"verification_link": verification_link}
+        )
+        session["flash"] = {"category": "success", "message": g.tr["registration_check_email"]}
+    else:
+        session["flash"] = {"category": "info", "message": g.tr.get("user_already_verified", "User is already verified or does not exist.")}
+        
+    return redirect(url_for('auth.handle_login', lang=lang))
+
+
 @auth_bp.route("/logout")
 def handle_logout():
     lang = session.get('lang', 'en')
@@ -96,6 +121,8 @@ def handle_logout():
     session["lang"] = lang
     session["flash"] = {"category": "success", "message": g.tr.get("logout_success_message", "You have been logged out.")}
     return redirect(url_for('pages.read_root', lang=lang))
+
+# ... (остальной код файла, например, handle_forgot_password, остается без изменений) ...
 
 @auth_bp.route("/forgot-password", methods=['GET', 'POST'])
 def handle_forgot_password():

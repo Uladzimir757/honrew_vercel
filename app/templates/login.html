@@ -24,6 +24,21 @@
                         </div>
                     </div>
                 </div>
+                                {% if needs_verification %}
+                <div class="text-center text-sm mt-4 p-3 bg-yellow-900/50 border border-yellow-700 rounded-lg">
+                    <p class="text-yellow-200">
+                        {{ tr.error_not_verified }}
+                        <a href="{{ url_for('auth.resend_verification_email', email=email, lang=lang) }}" class="font-bold underline hover:text-yellow-100">
+                            {{ tr.resend_verification_link }}
+                        </a>
+                    </p>
+                </div>
+                {% endif %}
+
+                <div class="text-sm text-center mt-6">
+                    <a href="/register?lang={{ lang }}" class="font-medium text-blue-400 hover:text-blue-300">{{
+                        tr.dont_have_account }} {{ tr.register }}</a>
+                </div>
 
                 <div class="flex items-center justify-end">
                     <div class="text-sm">
