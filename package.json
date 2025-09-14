@@ -5,7 +5,7 @@
   "scripts": {
     "test": "pytest",
     "watch": "npx tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --watch",
-    "build": "npx tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --minify"
+    "build": "node ./node_modules/tailwindcss/lib/cli.js -i ./app/static/css/input.css -o ./app/static/css/output.css --minify"
   },
   "repository": {
     "type": "git",
