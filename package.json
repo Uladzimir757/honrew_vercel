@@ -4,8 +4,8 @@
   "description": "Honest Reviews platform",
   "scripts": {
     "test": "pytest",
-    "watch": "tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --watch",
-    "build": "tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --minify"
+    "watch": "npx tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --watch",
+    "build": "npx tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --minify"
   },
   "repository": {
     "type": "git",
