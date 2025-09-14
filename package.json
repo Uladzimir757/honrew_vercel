@@ -3,28 +3,13 @@
   "version": "1.0.0",
   "description": "Honest Reviews platform",
   "scripts": {
-    "test": "pytest",
-    "watch": "npx tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --watch",
-    "build": "node ./node_modules/tailwindcss/lib/cli.js -i ./app/static/css/input.css -o ./app/static/css/output.css --minify"
+    "build": "npx tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --minify",
+    "watch": "npx tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --watch"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Uladzimir757/video-review.git"
-  },
-  "keywords": [],
   "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Uladzimir757/video-review/issues"
-  },
-  "homepage": "https://github.com/Uladzimir757/video-review#readme",
-  "devDependencies": {
-
+  "dependencies": {
     "@tailwindcss/typography": "^0.5.16",
     "tailwindcss": "^3.4.1"
-  },
-  "devDependencies": {
-   
-  
   }
 }

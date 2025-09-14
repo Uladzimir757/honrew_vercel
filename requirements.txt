@@ -1,11 +1,9 @@
-fastapi
-uvicorn
-jinja2
-itsdangerous
-python-multipart 
-sqlalchemy        
-psycopg2-binary              
 Flask
+itsdangerous
+Jinja2
+psycopg2-binary
+python-multipart
+requests
 pydantic-settings
 passlib
-requests
+python-dotenv
