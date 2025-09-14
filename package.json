@@ -1,9 +1,8 @@
 {
   "name": "honest-reviews",
-  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "vercel-build": "npm install && npx tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --minify"
+    "build": "npx tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --minify"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.16",
