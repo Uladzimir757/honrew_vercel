@@ -19,7 +19,12 @@
   },
   "homepage": "https://github.com/Uladzimir757/video-review#readme",
   "devDependencies": {
+
     "@tailwindcss/typography": "^0.5.16",
     "tailwindcss": "^3.4.1"
+  },
+  "devDependencies": {
+   
+  
   }
 }

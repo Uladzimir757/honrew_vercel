@@ -1,10 +1,14 @@
 # Файл: app/main.py
+import os
+import json
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from flask import Flask, request, session, g
+
 from app.config import settings
 from app.routers import (auth_bp, pages_bp, videos_bp, users_bp, 
                          complaints_bp, admin_bp)
+from app.dependencies import get_current_user
 
 # --- Класс для работы с базой данных ---
 class PostgresManager:
@@ -53,7 +57,7 @@ def get_app():
                 template_folder='templates')
     app.secret_key = settings.SECRET_KEY
 
-    # Регистрация всех ваших Blueprint'ов
+    # Регистрация всех Blueprint'ов
     app.register_blueprint(auth_bp)
     app.register_blueprint(pages_bp)
     app.register_blueprint(videos_bp)
@@ -63,14 +67,29 @@ def get_app():
 
     @app.before_request
     def before_request_handler():
+        # Создаем подключение к БД для каждого запроса
         g.db = PostgresManager(settings.DATABASE_URL)
         
-        # Загрузка переводов и информации о пользователе в g
-        from app.dependencies import get_language_and_translations, get_current_user
-        g.lang, g.tr = get_language_and_translations(request)
+        # --- НОВАЯ ЛОГИКА ЗАГРУЗКИ ПЕРЕВОДОВ ---
+        lang = request.args.get('lang', session.get('lang', 'ru'))
+        if lang not in ['en', 'ru', 'pl']:
+            lang = 'ru'
+        session['lang'] = lang
+        g.lang = lang
+
+        # Загружаем нужный JSON-файл
+        translations_path = os.path.join(app.root_path, 'locales', f'{lang}.json')
+        try:
+            with open(translations_path, 'r', encoding='utf-8') as f:
+                g.tr = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            g.tr = {} # Если файл не найден или ошибка, используем пустой словарь
+        # -----------------------------------------
+        
+        # Получаем текущего пользователя
         g.user = get_current_user(g.db)
         
-        # Передача flash-сообщений в контекст шаблонов
+        # Передача flash-сообщений в контекст
         g.flash = session.pop('flash', None)
 
 
@@ -82,6 +101,7 @@ def get_app():
 
     @app.context_processor
     def inject_global_vars():
+        # Эта функция делает переменные из `g` доступными во всех шаблонах
         return {
             'user': g.get('user'),
             'lang': g.get('lang'),
@@ -92,8 +112,6 @@ def get_app():
 
     return app
 
-# --- Точка входа для Vercel (api/index.py) ---
-# Этот код нужен для того, чтобы Vercel мог запустить приложение.
-# Он не будет выполняться при запуске manage.py
+# --- Точка входа для Vercel ---
 if __name__ != "__main__":
     app = get_app()
