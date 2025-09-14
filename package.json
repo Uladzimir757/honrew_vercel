@@ -1,16 +1,26 @@
 {
-  "name": "honest-reviews",
-  "version": "1.0.0",
-  "description": "Honest Reviews platform",
-  "scripts": {
-    "test": "pytest",
-    "watch": "npx tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --watch",
-    "build": "node ./node_modules/tailwindcss/lib/cli.js -i ./app/static/css/input.css -o ./app/static/css/output.css --minify"
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@tailwindcss/typography": "^0.5.16",
-    "tailwindcss": "^3.4.1"
-  }
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "installCommand": "npm install",
+        "distDir": "app/static"
+      }
+    },
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/app/static/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "api/index.py"
+    }
+  ]
 }
