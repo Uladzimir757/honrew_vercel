@@ -49,10 +49,22 @@ class PostgresManager:
             self._connection = None
 
 def get_app():
+    # --- НАЧАЛО ИСПРАВЛЕНИЙ ---
+    # Определяем корневой каталог проекта.
+    # __file__ это /app/main.py, dirname() -> /app, dirname() -> / (корень проекта)
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    
+    # Указываем новый, абсолютный путь к папке static в корне проекта
+    static_folder_path = os.path.join(project_root, 'static')
+
+    # Создаем экземпляр Flask, явно указывая новый путь к static_folder.
+    # template_folder='templates' остается без изменений, т.к. папка templates находится внутри app.
     app = Flask(__name__, 
-                static_folder='static', 
+                static_folder=static_folder_path, 
                 static_url_path='/static',
                 template_folder='templates')
+    # --- КОНЕЦ ИСПРАВЛЕНИЙ ---
+
     app.secret_key = settings.SECRET_KEY
 
     app.register_blueprint(auth_bp)
