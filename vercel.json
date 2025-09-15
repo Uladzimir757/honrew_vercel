@@ -12,7 +12,7 @@
       "dest": "/static/$1"
     },
     {
-      "src": "/(.*)",
+      "src": "/((?!api/|static/).*)",
       "dest": "api/index.py"
     }
   ]
