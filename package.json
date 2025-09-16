@@ -2,7 +2,6 @@
   "name": "honest-reviews",
   "private": true,
   "scripts": {
-    "build": "chmod +x ./node_modules/.bin/tailwindcss && tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.16",
