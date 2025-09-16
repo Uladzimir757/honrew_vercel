@@ -2,8 +2,8 @@
   "name": "honest-reviews",
   "private": true,
   "scripts": {
-    "build": "tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --minify"
-
+    "build": "node ./node_modules/tailwindcss/lib/cli.js -i ./app/static/css/input.css -o ./app/static/css/output.css --minify"
+    
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.16",
