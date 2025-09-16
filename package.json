@@ -2,19 +2,11 @@
   "name": "honest-reviews",
   "private": true,
   "scripts": {
-    "build": "node ./node_modules/tailwindcss/lib/cli.js -i ./app/static/css/input.css -o ./app/static/css/output.css --minify"
-    
+    "build": "chmod +x ./node_modules/.bin/tailwindcss && tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.16",
     "tailwindcss": "^3.4.1",
-    "yaml": "^2.x.x"
-  },
-  "devDependencies": {
-    "yaml": "^2.8.1"
+    "yaml": "^2.4.5"
   }
-  
 }
-    
-  
-  
