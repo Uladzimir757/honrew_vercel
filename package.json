@@ -2,7 +2,8 @@
   "name": "honest-reviews",
   "private": true,
   "scripts": {
-    "build": "chmod +x ./node_modules/.bin/tailwindcss && tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --minify"
+    "build": "tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --minify"
+
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.16",
@@ -11,7 +12,9 @@
   },
   "devDependencies": {
     "yaml": "^2.8.1"
-    
   }
   
 }
+    
+  
+  
