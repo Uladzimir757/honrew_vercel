@@ -14,3 +14,7 @@ python manage.py verify-user ваш_админский_email@example.com
 SQL
 
 UPDATE users SET is_admin = TRUE WHERE email = 'vovan757vovan@gmail.com';
+
+SQL
+
+UPDATE users SET is_verified = TRUE WHERE email = 'vovan757vovan@gmail.com';

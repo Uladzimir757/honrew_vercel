@@ -2,24 +2,21 @@
 
 {% block content %}
 <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <h1 class="text-4xl font-bold text-white mb-2">Запись отзыва</h1>
-    <p class="text-lg text-gray-400 mb-8">Запишите видео длиной до 10 минут.</p>
-
-   <div class="bg-glass rounded-lg shadow-lg p-6 md:p-8 max-w-3xl mx-auto">
+    <h1 class="text-4xl font-bold text-white mb-2">{{ tr.record_review_title }}</h1>
+    <p class="text-lg text-gray-400 mb-8">{{ tr.record_review_subtitle }}</p>
+    <div class="bg-glass rounded-lg shadow-lg p-6 md:p-8 max-w-3xl mx-auto">
         <div class="bg-black rounded-md overflow-hidden mb-4">
             <video id="video-preview" class="w-full h-auto" autoplay muted playsinline></video>
         </div>
 
         <div id="controls" class="flex flex-wrap items-center gap-4 mb-8">
-            <button id="start-button" class="bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700 transition">Начать запись</button>
-            <button id="stop-button" class="bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700 transition hidden">Остановить запись</button>
-            <button id="switch-camera-button" class="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition hidden">Сменить камеру</button>
+            <button id="start-button" class="bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700 transition">{{ tr.start_recording_button }}</button>
+            <button id="stop-button" class="bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700 transition hidden">{{ tr.stop_recording_button }}</button>
+            <button id="switch-camera-button" class="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition hidden">{{ tr.switch_camera_button }}</button>
             <p id="status" class="text-slate-300"></p>
         </div>
-
         <form id="upload-form" action="/upload?lang={{ lang }}" method="post" enctype="multipart/form-data" class="hidden upload-form">
-            <h3 class="text-2xl font-semibold text-white mb-6">Детали вашего отзыва</h3>
-            
+            <h3 class="text-2xl font-semibold text-white mb-6">{{ tr.review_details_title }}</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label for="what" class="block text-slate-300 text-sm font-bold mb-2">{{ tr.upload_what_label }}</label>
@@ -71,10 +68,9 @@
 
 <div id="upload-overlay" style="display: none;" class="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50">
     <div class="spinner"></div>
-    <p class="text-white text-lg mt-4">Загрузка вашего отзыва... Пожалуйста, подождите.</p>
-</div>
-
+    <p class="text-white text-lg mt-4">{{ tr.upload_spinner_text }}</p>
+    </div>
 
 <script src="{{ url_for('static', filename='js/recorder.js') }}"></script>
 <script src="{{ url_for('static', filename='js/upload-progress.js') }}"></script>
-{% endblock %}ыы
+{% endblock %}

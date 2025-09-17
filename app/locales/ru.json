@@ -230,5 +230,16 @@
     "company_reply_title": "Официальный ответ компании",
     "company_reply_placeholder": "Напишите ваш официальный ответ на этот отзыв...",
     "company_reply_button": "Отправить ответ",
-    "company_reply_success": "Ваш ответ был успешно опубликован."
+    "company_reply_success": "Ваш ответ был успешно опубликован.",
+    "record_video_prompt": "Хотите записать видео прямо сейчас?",
+    "go_to_record_button": "Перейти к записи с камеры",
+    "upload_spinner_text": "Загрузка вашего отзыва... Пожалуйста, подождите.",
+    "record_review_title": "Запись отзыва",
+    "record_review_subtitle": "Запишите видео длиной до 10 минут.",
+    "start_recording_button": "Начать запись",
+    "stop_recording_button": "Остановить запись",
+    "switch_camera_button": "Сменить камеру",
+    "review_details_title": "Детали вашего отзыва",
+    "company_reply_missing": "Компания еще не оставила ответ на этот отзыв.",
+    "no_comments_yet_message": "Комментариев пока нет."
 }

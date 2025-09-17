@@ -105,8 +105,8 @@
                         </button>
                     </form>
                 {% else %}
-                    <p class="text-gray-400">Компания еще не оставила ответ на этот отзыв.</p>
-                {% endif %}
+                    <p class="text-gray-400">{{ tr.company_reply_missing }}</p>
+                    {% endif %}
             </div>
 
             <div class="border-t border-slate-700 px-6 md:px-8 py-6">
@@ -159,7 +159,7 @@
                         {% endif %}
                     </div>
                     {% else %}
-                    <p id="no-comments-message" class="text-gray-400">Комментариев пока нет.</p>
+                    <p id="no-comments-message" class="text-gray-400">{{ tr.no_comments_yet_message }}</p>
                     {% endfor %}
                 </div>
             </div>

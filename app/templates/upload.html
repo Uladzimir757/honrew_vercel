@@ -7,7 +7,7 @@
     .rating label {
         float: right;
         cursor: pointer;
-        color: #4A5568; /* Цвет пустой звезды */
+        color: #6e7d97; /* Цвет пустой звезды */
         transition: color 0.2s;
     }
     .rating label:before {
@@ -27,9 +27,9 @@
         <form action="/upload?lang={{ lang }}" method="POST" enctype="multipart/form-data" class="space-y-6 upload-form">
 
             <div class="text-center mb-8">
-                <p class="text-slate-300">Хотите записать видео прямо сейчас?</p>
+                <p class="text-slate-300">{{ tr.record_video_prompt }}</p>
                 <a href="/record?lang={{ lang }}" class="inline-block mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition">
-                    Перейти к записи с камеры
+                    {{ tr.go_to_record_button }}
                  </a>
             </div>
             <hr class="border-slate-700 my-8">
@@ -104,8 +104,7 @@
 
 <div id="upload-overlay" style="display: none;" class="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50">
     <div class="spinner"></div>
-    <p class="text-white text-lg mt-4">Загрузка вашего отзыва... Пожалуйста, подождите.</p>
+    <p class="text-white text-lg mt-4">{{ tr.upload_spinner_text }}</p>
 </div>
-
 <script src="{{ url_for('static', filename='js/upload-progress.js') }}"></script>
 {% endblock %}

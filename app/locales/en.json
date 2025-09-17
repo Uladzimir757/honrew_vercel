@@ -230,5 +230,16 @@
     "company_reply_title": "Official Company Reply",
     "company_reply_placeholder": "Write your official reply to this review...",
     "company_reply_button": "Submit Reply",
-    "company_reply_success": "Your reply has been successfully published."
+    "company_reply_success": "Your reply has been successfully published.",
+    "record_video_prompt": "Want to record a video right now?",
+    "go_to_record_button": "Go to record from camera",
+    "upload_spinner_text": "Uploading your review... Please wait.",
+    "record_review_title": "Record a Review",
+    "record_review_subtitle": "Record a video up to 10 minutes long.",
+    "start_recording_button": "Start Recording",
+    "stop_recording_button": "Stop Recording",
+    "switch_camera_button": "Switch Camera",
+    "review_details_title": "Your Review Details",
+    "company_reply_missing": "The company has not yet left a response to this review.",
+    "no_comments_yet_message": "No comments yet."
 }

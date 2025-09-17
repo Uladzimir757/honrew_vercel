@@ -230,5 +230,16 @@
     "company_reply_title": "Oficjalna odpowiedź firmy",
     "company_reply_placeholder": "Napisz swoją oficjalną odpowiedź na tę recenzję...",
     "company_reply_button": "Prześlij odpowiedź",
-    "company_reply_success": "Twoja odpowiedź została pomyślnie opublikowana."
+    "company_reply_success": "Twoja odpowiedź została pomyślnie opublikowana.",
+    "record_video_prompt": "Chcesz teraz nagrać wideo?",
+    "go_to_record_button": "Przejdź do nagrywania z kamery",
+    "upload_spinner_text": "Przesyłanie Twojej opinii... Proszę czekać.",
+    "record_review_title": "Nagrywanie opinii",
+    "record_review_subtitle": "Nagraj wideo o długości do 10 minut.",
+    "start_recording_button": "Rozpocznij nagrywanie",
+    "stop_recording_button": "Zatrzymaj nagrywanie",
+    "switch_camera_button": "Przełącz kamerę",
+    "review_details_title": "Szczegóły Twojej opinii",
+    "company_reply_missing": "Firma nie zostawiła jeszcze odpowiedzi na tę opinię.",
+    "no_comments_yet_message": "Brak komentarzy."
 }
