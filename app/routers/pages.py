@@ -5,8 +5,10 @@ from app.config import settings
 
 pages_bp = Blueprint('pages', __name__)
 
-@pages_bp.route("/", methods=['GET'])
+# --- ИЗМЕНЕНИЕ ЗДЕСЬ ---
+@pages_bp.route("/", methods=['GET'], endpoint='home')
 def read_root():
+# --- КОНЕЦ ИЗМЕНЕНИЙ ---
     return render_template("index.html", background_image="index.jpg")
 
 @pages_bp.route("/search", methods=['GET'])
