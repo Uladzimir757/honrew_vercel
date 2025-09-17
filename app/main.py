@@ -49,18 +49,13 @@ class PostgresManager:
             self._connection = None
 
 def get_app():
-    # --- ИЗМЕНЕНИЕ ЗДЕСЬ ---
-    # Определяем корневую директорию проекта
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    # Указываем новый путь к папке static в корне
     static_folder_path = os.path.join(project_root, 'static')
 
-    # Создаем приложение Flask с указанием нового пути к static_folder
     app = Flask(__name__, 
                 static_folder=static_folder_path, 
                 static_url_path='/static',
                 template_folder='templates')
-    # --- КОНЕЦ ИЗМЕНЕНИЙ ---
 
     app.secret_key = settings.SECRET_KEY
 
@@ -99,12 +94,28 @@ def get_app():
 
     @app.context_processor
     def inject_global_vars():
+        # --- НАЧАЛО ИСПРАВЛЕНИЙ ---
+        pending_complaints_count = 0
+        user = g.get('user')
+        if user and user.get('is_admin'):
+            try:
+                count_result = g.db.fetch_one(
+                    "SELECT COUNT(*) as count FROM complaints WHERE status = 'pending'"
+                )
+                if count_result:
+                    pending_complaints_count = count_result['count']
+            except Exception as e:
+                print(f"Ошибка при подсчете жалоб: {e}")
+                pending_complaints_count = 0
+        # --- КОНЕЦ ИСПРАВЛЕНИЙ ---
+
         return {
-            'user': g.get('user'),
+            'user': user,
             'lang': g.get('lang'),
             'tr': g.get('tr'),
             'flash': g.get('flash'),
-            'settings': settings
+            'settings': settings,
+            'pending_complaints_count': pending_complaints_count # <-- Добавили переменную сюда
         }
     return app
 
