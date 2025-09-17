@@ -3,3 +3,14 @@
 python manage.py delete-user ваш_тестовый_email@example.com
 
 python manage.py verify-user ваш_админский_email@example.com
+
+
+Зайдите в вашу панель управления базой данных на сайте Neon.
+
+Найдите раздел SQL Editor (Редактор SQL).
+
+Введите и выполните следующую SQL-команду, заменив email на свой:
+
+SQL
+
+UPDATE users SET is_admin = TRUE WHERE email = 'vovan757vovan@gmail.com';
