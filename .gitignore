@@ -23,3 +23,4 @@ env/
 
 # Служебные папки Cloudflare (больше не нужны)
 .wrangler/
+.evn
