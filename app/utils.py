@@ -1,18 +1,21 @@
-# Файл: app/utils.py
+# File: app/utils.py
 
 import logging
 import json
-import requests  # Используем стандартную библиотеку requests вместо pyodide
+import requests
+import boto3
+import traceback
+from botocore.exceptions import BotoCoreError, ClientError
 from flask import Request
-from app.config import settings # Предполагается, что у вас есть файл настроек
+from app.config import settings
 
-# --- Настройка логирования ---
+# --- Logging Setup ---
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-# --- Обновленная функция отправки Email через MailChannels ---
-def send_email_notification(  # Функция теперь синхронная (убрали async)
+# --- Email sending function via MailChannels ---
+def send_email_notification(
     request: Request,
     recipients: list[str],
     subject_key: str,
@@ -20,22 +23,21 @@ def send_email_notification(  # Функция теперь синхронная
     template_vars: dict = None
 ):
     """
-    Отправляет email, используя API MailChannels через стандартные HTTP-запросы.
-    Подходит для любого серверного окружения, включая Vercel.
+    Sends an email using the MailChannels API via standard HTTP requests.
+    Suitable for any server environment, including Vercel.
     """
     from app.dependencies import get_language_and_translations
     
-    # Получаем язык и переводы из запроса
+    # Get language and translations from the request
     lang, tr = get_language_and_translations(request)
     
     subject = tr.get(subject_key, "Notification")
     body_template = tr.get(body_key, "")
     
-    # Подставляем переменные в тело письма
+    # Substitute variables into the email body
     body = body_template.format(**template_vars) if template_vars else body_template
 
-    # Формируем JSON-тело запроса по спецификации MailChannels
-    # Структура тела запроса остается той же самой
+    # Form the JSON body for the MailChannels API request
     mailchannels_data = {
         "personalizations": [
             {
@@ -43,7 +45,6 @@ def send_email_notification(  # Функция теперь синхронная
             }
         ],
         "from": {
-            # Email отправителя лучше брать из настроек, а не хардкодить
             "email": settings.MAIL_FROM_EMAIL, 
             "name": "Honest Reviews"
         },
@@ -57,24 +58,68 @@ def send_email_notification(  # Функция теперь синхронная
     }
 
     try:
-        # Совершаем HTTP POST запрос к API MailChannels с помощью requests
+        # Make an HTTP POST request to the MailChannels API
         response = requests.post(
             "https://api.mailchannels.net/tx/v1/send",
             headers={"Content-Type": "application/json"},
-            json=mailchannels_data,  # requests сам преобразует dict в JSON
+            json=mailchannels_data,
         )
 
-        # Эта строка вызовет исключение, если код ответа не 2xx (например, 400, 500)
         response.raise_for_status()
 
-        logger.info(f"Email успешно отправлен на {recipients}")
+        logger.info(f"Email successfully sent to {recipients}")
 
     except requests.exceptions.RequestException as e:
-        # Логируем ошибки сети или HTTP-статуса
-        logger.error(f"Ошибка отправки email через MailChannels: {e}")
-        # Если есть ответ от сервера, логируем и его
+        # Log network or HTTP status errors
+        logger.error(f"Error sending email via MailChannels: {e}")
         if e.response is not None:
-            logger.error(f"Ответ сервера: {e.response.status_code} {e.response.text}")
+            logger.error(f"Server Response: {e.response.status_code} {e.response.text}")
             
     except Exception as e:
-        logger.error(f"Критическая ошибка при отправке email: {e}")
+        logger.error(f"Critical error while sending email: {e}")
+
+
+# --- R2 file upload function with detailed logging ---
+def upload_file_to_r2(file_obj, object_name: str) -> bool:
+    """
+    Uploads a file-like object to a Cloudflare R2 bucket.
+
+    :param file_obj: The file-like object to upload.
+    :param object_name: The name of the object in the bucket (e.g., 'images/my-photo.jpg').
+    :return: True on success, False on error.
+    """
+    try:
+        # Create an S3 client using environment variables from settings
+        s3_client = boto3.client(
+            service_name='s3',
+            endpoint_url=settings.S3_ENDPOINT_URL,
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            region_name='auto',  # Typically 'auto' for R2
+        )
+    except Exception as e:
+        logger.error(f"Critical error creating S3 client: {e}")
+        traceback.print_exc()
+        return False
+
+    try:
+        # Upload the file
+        s3_client.upload_fileobj(
+            file_obj,
+            settings.S3_BUCKET_NAME,
+            object_name
+        )
+        logger.info(f"File {object_name} successfully uploaded to bucket {settings.S3_BUCKET_NAME}.")
+        return True
+
+    except (BotoCoreError, ClientError) as e:
+        # This block now catches and displays the actual error from boto3/botocore
+        logger.error(f"DETAILED R2 UPLOAD ERROR: {e}")
+        traceback.print_exc() # Print the full traceback for maximum detail
+        return False
+    
+    except Exception as e:
+        # A general handler for any other unexpected errors
+        logger.error(f"Unexpected error during R2 file upload: {e}")
+        traceback.print_exc()
+        return False
