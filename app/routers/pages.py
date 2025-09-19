@@ -2,26 +2,19 @@
 import math
 from flask import Blueprint, request, render_template, Response, g
 from app.config import settings
-### НАЧАЛО ИЗМЕНЕНИЙ: Добавьте недостающие импорты ###
-from app.dependencies import get_language_and_translations
 from app.decorators import login_required
-### КОНЕЦ ИЗМЕНЕНИЙ ###
-
 
 pages_bp = Blueprint('pages', __name__)
 
 @pages_bp.route("/", methods=['GET'], endpoint='home')
 def read_root():
-    # Эта функция теперь будет передавать переменные в шаблон, как и другие
-    lang, tr = get_language_and_translations(request)
-    return render_template("index.html", background_image="index.jpg", lang=lang, tr=tr, title=tr.get("title"))
+    return render_template("index.html")
 
 @pages_bp.route("/search", methods=['GET'])
 def search_results():
     q = request.args.get('q', '')
     location = request.args.get('location', '')
     page = request.args.get('page', 1, type=int)
-    lang, tr = get_language_and_translations(request) # Добавлено для полноты
 
     offset = (page - 1) * settings.ITEMS_PER_PAGE
     search_term = f"%{q}%" if q else "%"
@@ -53,39 +46,25 @@ def search_results():
         query=q,
         location=location,
         current_page=page,
-        total_pages=total_pages,
-        background_image="index.jpg",
-        lang=lang,  # Добавлено для полноты
-        tr=tr       # Добавлено для полноты
+        total_pages=total_pages
     )
 
 @pages_bp.route("/terms", methods=['GET'])
 def terms_page():
-    lang, tr = get_language_and_translations(request)
-    return render_template("terms.html", background_image="index.jpg", lang=lang, tr=tr, title=tr.get("footer_terms"))
+    return render_template("terms.html")
 
 @pages_bp.route("/privacy", methods=['GET'])
 def privacy_page():
-    lang, tr = get_language_and_translations(request)
-    return render_template("privacy.html", background_image="index.jpg", lang=lang, tr=tr, title=tr.get("footer_privacy"))
+    return render_template("privacy.html")
 
 @pages_bp.route("/contact", methods=['GET'])
 def contact_page():
-    lang, tr = get_language_and_translations(request)
-    return render_template("contact.html", background_image="index.jpg", lang=lang, tr=tr, title=tr.get("contact_page_title"))
+    return render_template("contact.html")
 
-### НАЧАЛО ИЗМЕНЕНИЙ: Добавлен недостающий маршрут ###
 @pages_bp.route('/record')
 @login_required
 def record_page():
-    lang, tr = get_language_and_translations(request)
-    return render_template(
-        "record.html", 
-        lang=lang, 
-        tr=tr,
-        title=tr.get("record_review_title", "Record Review")
-    )
-### КОНЕЦ ИЗМЕНЕНИЙ ###
+    return render_template("record.html")
 
 @pages_bp.route("/sitemap.xml", methods=['GET'])
 def sitemap():

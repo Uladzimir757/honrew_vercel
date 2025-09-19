@@ -20,7 +20,7 @@ class PostgresManager:
             try:
                 self._connection = psycopg2.connect(self.dsn)
             except psycopg2.OperationalError as e:
-                print(f"Ошибка подключения к базе данных: {e}")
+                print(f"Database connection error: {e}")
                 raise
         return self._connection
 
@@ -83,7 +83,10 @@ def get_app():
         except (FileNotFoundError, json.JSONDecodeError):
             g.tr = {}
         
-        g.user = get_current_user(g.db)
+        ### НАЧАЛО ИЗМЕНЕНИЙ: Убираем g.db из вызова ###
+        g.user = get_current_user()
+        ### КОНЕЦ ИЗМЕНЕНИЙ ###
+
         g.flash = session.pop('flash', None)
 
     @app.teardown_request
@@ -94,7 +97,6 @@ def get_app():
 
     @app.context_processor
     def inject_global_vars():
-        # --- НАЧАЛО ИСПРАВЛЕНИЙ ---
         pending_complaints_count = 0
         user = g.get('user')
         if user and user.get('is_admin'):
@@ -105,9 +107,8 @@ def get_app():
                 if count_result:
                     pending_complaints_count = count_result['count']
             except Exception as e:
-                print(f"Ошибка при подсчете жалоб: {e}")
+                print(f"Error counting complaints: {e}")
                 pending_complaints_count = 0
-        # --- КОНЕЦ ИСПРАВЛЕНИЙ ---
 
         return {
             'user': user,
@@ -115,7 +116,7 @@ def get_app():
             'tr': g.get('tr'),
             'flash': g.get('flash'),
             'settings': settings,
-            'pending_complaints_count': pending_complaints_count # <-- Добавили переменную сюда
+            'pending_complaints_count': pending_complaints_count
         }
     return app
 
