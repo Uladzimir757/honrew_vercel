@@ -2,20 +2,24 @@
 import os
 import uuid
 import math
+import logging
+import boto3
+from botocore.exceptions import ClientError
 from datetime import datetime, timezone
 from flask import (Blueprint, request, session, g, render_template,
                    redirect, url_for, jsonify, abort)
 
 from app.config import settings
 from app.moderation import check_text_for_stop_words
-from app.utils import send_email_notification, logger
+from app.utils import send_email_notification
 from app.decorators import login_required
 
 videos_bp = Blueprint('videos', __name__)
 
+# --- ВАШИ СУЩЕСТВУЮЩИЕ МАРШРУТЫ (остаются почти без изменений) ---
+
 @videos_bp.route("/video/<int:video_id>")
 def view_video_page(video_id: int):
-    # ИСПРАВЛЕНО: Заменен ?1 на %s
     query_video = """
         SELECT v.*, u.email as author_email, u.id as author_id
         FROM videos v JOIN users u ON v.user_id = u.id
@@ -24,20 +28,18 @@ def view_video_page(video_id: int):
     video_data = g.db.fetch_one(query_video, (video_id,))
 
     if not video_data:
-        return redirect(url_for('pages.read_root', lang=session.get('lang')))
+        return redirect(url_for('pages.home', lang=session.get('lang')))
     
     is_owner = g.user and g.user["id"] == video_data["author_id"]
     is_admin = g.user and g.user.get("is_admin")
     is_published = video_data["status"] == 'published'
 
     if not is_published and not is_owner and not is_admin:
-        return redirect(url_for('pages.read_root', lang=session.get('lang')))
+        return redirect(url_for('pages.home', lang=session.get('lang')))
     
-    # ИСПРАВЛЕНО: Заменен fetch_val и ?1, добавлен алиас AS total
     likes_count_result = g.db.fetch_one("SELECT COUNT(*) AS total FROM likes WHERE video_id = %s", (video_id,))
     likes_count = likes_count_result['total'] if likes_count_result else 0
     
-    # ИСПРАВЛЕНО: Заменен ?1 на %s
     query_comments = """
         SELECT c.*, u.id as author_id, u.email as author_email
         FROM comments c JOIN users u ON c.user_id = u.id
@@ -48,7 +50,6 @@ def view_video_page(video_id: int):
 
     user_has_liked = False
     if g.user:
-        # ИСПРАВЛЕНО: Заменены ?1, ?2 на %s
         like = g.db.fetch_one("SELECT 1 FROM likes WHERE video_id = %s AND user_id = %s", (video_id, g.user["id"]))
         user_has_liked = bool(like)
         
@@ -56,7 +57,6 @@ def view_video_page(video_id: int):
     media_url = f"{base_media_url}/{video_data['filename']}" 
     preview_url = f"{base_media_url}/{video_data['preview_filename']}" if video_data.get('preview_filename') else None
 
-    # ИСПРАВЛЕНО: Заменен ?1 на %s
     query_reply = """
         SELECT cr.*, u.email as company_email
         FROM company_replies cr JOIN users u ON cr.user_id = u.id
@@ -69,7 +69,7 @@ def view_video_page(video_id: int):
     return render_template("video_view.html",
         video=video_data, likes_count=likes_count, comments=video_comments,
         user_has_liked=user_has_liked, title=f"{video_data['title']} - HonestReviews",
-        description=video_data.get('description', '')[:155], background_image="index.jpg",
+        description=video_data.get('description', '')[:155],
         media_url=media_url, preview_url=preview_url,
         company_reply=reply_data, can_reply=can_reply
     )
@@ -83,12 +83,10 @@ def handle_company_reply(video_id: int):
     if g.user["user_type"] != 'company':
         return "Only company users can reply.", 403
 
-    # ИСПРАВЛЕНО: Заменен ?1 на %s
     existing_reply = g.db.fetch_one("SELECT id FROM company_replies WHERE video_id = %s", (video_id,))
     if existing_reply:
         return "A reply for this review already exists.", 400
 
-    # ИСПРАВЛЕНО: Заменены ?1, ?2, ?3 на %s
     query = "INSERT INTO company_replies (content, video_id, user_id) VALUES (%s, %s, %s)"
     g.db.execute(query, (content, video_id, g.user["id"]))
 
@@ -98,20 +96,16 @@ def handle_company_reply(video_id: int):
 @videos_bp.route("/api/video/<int:video_id>/like", methods=['POST'])
 @login_required
 def api_handle_like(video_id: int):
-    # ИСПРАВЛЕНО: Заменены ?1, ?2 на %s
     existing_like = g.db.fetch_one("SELECT 1 FROM likes WHERE video_id = %s AND user_id = %s", (video_id, g.user["id"]))
     lang = session.get('lang', 'en')
     
     if existing_like:
-        # ИСПРАВЛЕНО: Заменены ?1, ?2 на %s
         g.db.execute("DELETE FROM likes WHERE video_id = %s AND user_id = %s", (video_id, g.user["id"]))
         user_has_liked = False
     else:
-        # ИСПРАВЛЕНО: Заменены ?1, ?2 на %s
         g.db.execute("INSERT INTO likes (video_id, user_id) VALUES (%s, %s)", (video_id, g.user["id"]))
         user_has_liked = True
         
-        # ИСПРАВЛЕНО: Заменен ?1 на %s
         video_author_info_query = "SELECT u.email, v.title FROM videos v JOIN users u ON v.user_id = u.id WHERE v.id = %s"
         video_author_info = g.db.fetch_one(video_author_info_query, (video_id,))
         
@@ -124,7 +118,6 @@ def api_handle_like(video_id: int):
                 template_vars={ "liker_email": g.user["email"], "video_title": video_author_info["title"], "video_link": video_link }
             )
             
-    # ИСПРАВЛЕНО: Заменен fetch_val и ?1, добавлен алиас AS total
     likes_count_result = g.db.fetch_one("SELECT COUNT(*) AS total FROM likes WHERE video_id = %s", (video_id,))
     likes_count = likes_count_result['total'] if likes_count_result else 0
     return jsonify({"likes_count": likes_count, "user_has_liked": user_has_liked})
@@ -142,7 +135,6 @@ def api_handle_comment(video_id: int):
     if check_text_for_stop_words(text_to_check, lang):
         return jsonify({"error": g.tr["error_moderation_failed"]}), 400
     
-    # ИСПРАВЛЕНО: Заменены ?1, ?2, ?3, ?4 на %s
     insert_query = """
         INSERT INTO comments (content, video_id, user_id, created_at, status) 
         VALUES (%s, %s, %s, %s, 'pending_review')
@@ -154,19 +146,14 @@ def api_handle_comment(video_id: int):
 
 @videos_bp.route("/live")
 def live_page():
-    """
-    Отображает страницу с последними добавленными отзывами (живая лента).
-    """
     page = request.args.get('page', 1, type=int)
     offset = (page - 1) * settings.ITEMS_PER_PAGE
 
-    # Запрос для подсчета всех опубликованных видео
     count_query = "SELECT COUNT(*) AS total FROM videos WHERE status = 'published'"
     count_result = g.db.fetch_one(count_query)
     total_items = count_result['total'] if count_result else 0
     total_pages = math.ceil(total_items / settings.ITEMS_PER_PAGE) if total_items > 0 else 0
 
-    # Запрос для получения порции видео для текущей страницы
     select_query = """
         SELECT v.*, u.email as author_email, u.id as user_id
         FROM videos v JOIN users u ON v.user_id = u.id
@@ -180,8 +167,7 @@ def live_page():
         "live.html",
         videos=result_videos,
         current_page=page,
-        total_pages=total_pages,
-        background_image="index.jpg"
+        total_pages=total_pages
     )
 
 @videos_bp.route("/category/<category_name>")
@@ -193,10 +179,8 @@ def category_page(category_name: str):
     count_result = g.db.fetch_one(count_query, (category_name,))
     total_items = count_result['total'] if count_result else 0
 
-    # ИСПРАВЛЕНО: Добавлено вычисление total_pages
     total_pages = math.ceil(total_items / settings.ITEMS_PER_PAGE) if total_items > 0 else 0
 
-    # ИСПРАВЛЕНО: Заменены ?1, ?2, ?3 на %s
     select_query = """
         SELECT v.*, u.email as author_email FROM videos v JOIN users u ON v.user_id = u.id
         WHERE v.category = %s AND v.status = 'published'
@@ -207,60 +191,95 @@ def category_page(category_name: str):
     return render_template("category.html",
         videos=result_videos, current_page=page, total_pages=total_pages,
         category_name=category_name, 
-        category_title=g.tr.get(f"nav_{category_name.replace('-', '_')}", category_name),
-        background_image=f"{category_name}.jpg"
+        category_title=g.tr.get(f"nav_{category_name.replace('-', '_')}", category_name)
     )
+
+### НАЧАЛО ИЗМЕНЕНИЙ ###
 
 @videos_bp.route("/upload", methods=['GET', 'POST'])
 @login_required
 def handle_upload():
-    lang = session.get('lang', 'en')
+    if request.method == 'GET':
+        category_name = request.args.get('category')
+        return render_template("upload.html", selected_category=category_name)
+
     if request.method == 'POST':
-        # ... (код получения данных из формы) ...
-        title = request.form.get('title')
-        description = request.form.get('description')
-        category = request.form.get('category')
-        what = request.form.get('what')
-        where = request.form.get('where')
-        rating = request.form.get('rating', type=int)
-        media_file = request.files.get('media_file')
+        data = request.get_json()
+        if not data:
+            return jsonify({"status": "error", "message": "Invalid JSON payload"}), 400
 
-        if not media_file or not media_file.filename:
-            session["flash"] = {"category": "error", "message": "File is required."}
-            return redirect(url_for('videos.handle_upload', lang=lang))
+        what = data.get('what')
+        where = data.get('where')
+        title = data.get('title')
+        description = data.get('description')
+        category = data.get('category')
+        rating = data.get('rating')
+        object_name = data.get('objectName') 
+        media_type = data.get('mediaType', 'video')
 
-        preview_filename = None
-        media_type = 'video' if media_file.content_type and media_file.content_type.startswith('video/') else 'image'
-        unique_filename = f"{media_type}s/{uuid.uuid4()}{os.path.splitext(media_file.filename)[1]}"
-        
-        file_content = media_file.read()
-        
+        if not all([what, where, title, description, category, rating, object_name]):
+            return jsonify({"status": "error", "message": "Missing required fields"}), 400
+
         try:
-            g.r2.put(unique_filename, file_content, httpMetadata={'contentType': media_file.content_type})
+            query = """
+                INSERT INTO videos (title, description, category, filename, user_id, what, "where", media_type, rating, created_at, status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pending_review')
+            """
+            params = (title, description, category, object_name, g.user["id"], what, where, media_type, rating, datetime.now(timezone.utc).isoformat())
+            g.db.execute(query, params)
+            
+            session["flash"] = {"category": "success", "message": g.tr["upload_success_message"]}
+            return jsonify({"status": "success", "redirectUrl": url_for('pages.home', lang=g.lang)})
+
         except Exception as e:
-            logger.error(f"Ошибка загрузки файла в R2 для {unique_filename}: {e}")
-            session["flash"] = {"category": "error", "message": g.tr["error_s3_upload_failed"]}
-            return redirect(url_for('videos.handle_upload', lang=lang))
-        
-        # ИСПРАВЛЕНО: Заменены ? на %s
-        query_insert = """
-            INSERT INTO videos (title, description, category, filename, preview_filename, user_id, what, "where", media_type, rating, created_at, status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pending_review')
-        """
-        params = (title, description, category, unique_filename, preview_filename, g.user["id"], what, where, media_type, rating, datetime.now(timezone.utc).isoformat())
-        g.db.execute(query_insert, params)
+            logging.error(f"Database error during upload: {e}")
+            return jsonify({"status": "error", "message": "Failed to save review details."}), 500
 
-        session["flash"] = {"category": "success", "message": g.tr["upload_success_message"]}
-        return redirect(url_for('users.profile_page', lang=lang))
+@videos_bp.route("/api/generate-upload-url", methods=["POST"])
+@login_required
+def generate_upload_url():
+    try:
+        data = request.get_json()
+        filename = data.get("filename")
+        content_type = data.get("contentType")
 
-    category = request.args.get('category')
-    return render_template("upload.html", selected_category=category, background_image="index.jpg")
+        if not filename or not content_type:
+            return jsonify({"error": "Filename and contentType are required"}), 400
+
+        file_extension = ""
+        if '.' in filename:
+            file_extension = filename.rsplit('.', 1)[1].lower()
+
+        folder = 'images' if 'image' in content_type else 'videos'
+        object_name = f"{folder}/{uuid.uuid4()}.{file_extension}"
+
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=settings.S3_ENDPOINT_URL,
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            region_name="auto"
+        )
+
+        presigned_url = s3_client.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': settings.S3_BUCKET_NAME, 'Key': object_name, 'ContentType': content_type},
+            ExpiresIn=600  # Ссылка действительна 10 минут
+        )
+
+        return jsonify({"url": presigned_url, "objectName": object_name})
+
+    except ClientError as e:
+        logging.error(f"Error generating presigned URL: {e}")
+        return jsonify({"error": "Could not generate upload URL"}), 500
+    except Exception as e:
+        logging.error(f"An unexpected error occurred in generate_upload_url: {e}")
+        return jsonify({"error": "An internal server error occurred"}), 500
 
 @videos_bp.route("/video/delete/<int:video_id>", methods=['POST'])
 @login_required
 def delete_video(video_id: int):
     lang = session.get('lang', 'en')
-    # ИСПРАВЛЕНО: Заменен ?1 на %s
     video_data = g.db.fetch_one("SELECT * FROM videos WHERE id = %s", (video_id,))
 
     if not video_data or (video_data["user_id"] != g.user["id"] and not g.user.get("is_admin")):
@@ -270,9 +289,8 @@ def delete_video(video_id: int):
         if video_data.get("filename"): g.r2.delete(video_data["filename"])
         if video_data.get("preview_filename"): g.r2.delete(video_data["preview_filename"])
     except Exception as e:
-        logger.error(f"Ошибка удаления файла из R2: {e}, filename: {video_data.get('filename')}")
+        logging.error(f"Ошибка удаления файла из R2: {e}, filename: {video_data.get('filename')}")
     
-    # ИСПРАВЛЕНО: Заменен ?1 на %s
     g.db.execute("DELETE FROM videos WHERE id = %s", (video_id,))
     session["flash"] = {"category": "success", "message": g.tr["video_deleted_success"]}
 
@@ -280,3 +298,5 @@ def delete_video(video_id: int):
     if referer and "/admin/" in referer:
         return redirect(referer)
     return redirect(url_for('users.profile_page', lang=lang))
+
+### КОНЕЦ ИЗМЕНЕНИЙ ###
