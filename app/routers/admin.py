@@ -75,7 +75,6 @@ def _handle_review_status_change(video_id: int, new_status: str):
         
         video_link = url_for('videos.view_video_page', video_id=video_id, lang=lang, _external=True)
         send_email_notification(
-            request=request,
             recipients=[video_author_data["email"]],
             subject_key=subject_key, body_key=body_key,
             template_vars={

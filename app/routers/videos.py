@@ -298,5 +298,5 @@ def delete_video(video_id: int):
     if referer and "/admin/" in referer:
         return redirect(referer)
     return redirect(url_for('users.profile_page', lang=lang))
-
+ 
 ### КОНЕЦ ИЗМЕНЕНИЙ ###

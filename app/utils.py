@@ -5,29 +5,29 @@ import json
 import requests
 import boto3
 import traceback
-from botocore.exceptions import BotoCoreError, ClientError
-from flask import Request
+from botocore.exceptions import ClientError
+from flask import g  # <-- ИЗМЕНЕНИЕ: Убрали Request, добавили g
 from app.config import settings
 
-# --- Logging Setup ---
+# --- Настройка логирования ---
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
-# --- Email sending function via MailChannels ---
+# --- ОБНОВЛЕННАЯ функция отправки Email ---
 def send_email_notification(
-    request: Request,
     recipients: list[str],
     subject_key: str,
     body_key: str,
     template_vars: dict = None
 ):
     """
-    Sends an email using the MailChannels API via standard HTTP requests.
+    Отправляет email, используя API MailChannels.
+    Берёт язык и переводы из глобального контекста 'g'.
     """
-    from app.dependencies import get_language_and_translations
+    # --- ИЗМЕНЕНИЕ: Убираем импорт и вызов get_language_and_translations ---
+    # Вместо этого, получаем tr напрямую из g
+    tr = g.get('tr', {})
     
-    lang, tr = get_language_and_translations(request)
     subject = tr.get(subject_key, "Notification")
     body_template = tr.get(body_key, "")
     body = body_template.format(**template_vars) if template_vars else body_template
@@ -54,12 +54,9 @@ def send_email_notification(
     except Exception as e:
         logger.error(f"Critical error while sending email: {e}")
 
-
-# --- R2 file upload function with detailed logging ---
+# --- Функция загрузки файла в R2 (остается без изменений) ---
 def upload_file_to_r2(file_obj, object_name: str) -> bool:
-    """
-    Uploads a file-like object to a Cloudflare R2 bucket.
-    """
+    # ... (код этой функции остается прежним)
     try:
         s3_client = boto3.client(
             service_name='s3',
