@@ -265,7 +265,7 @@ def generate_upload_url():
 @login_required
 def edit_video(video_id):
     video = g.db.fetch_one("SELECT * FROM videos WHERE id = %s", (video_id,))
-    if not video or video['user_id'] != g.user['id']:
+    if not video or (video['user_id'] != g.user['id'] and not g.user.get('is_admin')):
         abort(403)
         
     if request.method == 'POST':
