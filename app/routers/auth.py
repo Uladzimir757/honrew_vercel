@@ -78,19 +78,21 @@ def handle_login():
         
         if not user_data['is_verified']:
             session["flash"] = {"category": "error", "message": g.tr["error_not_verified"]}
-            # Передаем email в шаблон, чтобы показать ссылку на повторную отправку
             return render_template("login.html", needs_verification=True, email=email)
 
-        session["user"] = {"email": user_data['email'], "id": user_data['id']}
+        ### ИЗМЕНЕНИЕ 1: Сохраняем ID пользователя в сессию под правильным ключом 'user_id' ###
+        session['user_id'] = user_data['id']
+        
         session["flash"] = {"category": "success", "message": g.tr["login_success_message"]}
         
         if user_data.get('is_admin'):
             return redirect(url_for('admin.admin_dashboard'))
-        return redirect(url_for('pages.read_root'))
+        
+        ### ИЗМЕНЕНИЕ 2: Перенаправляем на правильный endpoint 'pages.home' ###
+        return redirect(url_for('pages.home'))
 
     return render_template("login.html")
 
-# НОВЫЙ МАРШРУТ
 @auth_bp.route("/resend-verification/<email>")
 def resend_verification_email(email: str):
     lang = session.get('lang', 'en')
@@ -120,9 +122,8 @@ def handle_logout():
     session.clear()
     session["lang"] = lang
     session["flash"] = {"category": "success", "message": g.tr.get("logout_success_message", "You have been logged out.")}
-    return redirect(url_for('pages.read_root', lang=lang))
-
-# ... (остальной код файла, например, handle_forgot_password, остается без изменений) ...
+    ### ИЗМЕНЕНИЕ 3: Перенаправляем на правильный endpoint 'pages.home' ###
+    return redirect(url_for('pages.home', lang=lang))
 
 @auth_bp.route("/forgot-password", methods=['GET', 'POST'])
 def handle_forgot_password():
