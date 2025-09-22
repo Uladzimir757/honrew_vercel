@@ -6,8 +6,8 @@ from app.decorators import login_required
 
 pages_bp = Blueprint('pages', __name__)
 
-# --- ИЗМЕНЕНИЕ ЗДЕСЬ: убран endpoint='home' ---
-@pages_bp.route("/", methods=['GET'])
+# --- ВОТ ИСПРАВЛЕНИЕ: возвращаем endpoint='home' ---
+@pages_bp.route("/", methods=['GET'], endpoint='home')
 def read_root():
     return render_template("index.html")
 
