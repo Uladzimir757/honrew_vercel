@@ -1,97 +1,27 @@
-<!DOCTYPE html>
-<html lang="{{ lang }}" class="h-full bg-slate-900">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ tr.admin_panel_title }}</title>
-    <link href="{{ url_for('static', filename='css/output.css') }}" rel="stylesheet">
-</head>
-<body class="h-full">
-    <div class="min-h-full">
-        <div class="bg-slate-800 pb-32">
-            <nav class="bg-slate-800">
-                <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div class="border-b border-slate-700">
-                        <div class="flex h-16 items-center justify-between px-4 sm:px-0">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <a href="/admin?lang={{ lang }}" class="text-white font-bold">HonestReviews Admin</a>
-                                </div>
-                                <div class="hidden md:block">
-                                    <div class="ml-10 flex items-baseline space-x-4">
-                                        <a href="/admin?lang={{ lang }}" class="text-gray-300 hover:bg-slate-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">{{ tr.admin_nav_dashboard }}</a>
-                                        <a href="/admin/users?lang={{ lang }}" class="text-gray-300 hover:bg-slate-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">{{ tr.admin_nav_users }}</a>
-                                        <a href="/admin/reviews?lang={{ lang }}" class="text-gray-300 hover:bg-slate-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">{{ tr.admin_nav_reviews }}</a>
-                                        <a href="/admin/complaints?lang={{ lang }}" class="flex items-center text-gray-300 hover:bg-slate-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">
-                                            <span>{{ tr.admin_nav_complaints }}</span>
-                                            {% if pending_complaints_count > 0 %}
-                                                <span class="ml-2 inline-flex items-center justify-center h-6 w-6 rounded-full bg-red-500 text-xs font-bold text-white">{{ pending_complaints_count }}</span>
-                                            {% endif %}
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="hidden md:block">
-                                <div class="ml-4 flex items-center md:ml-6">
-                                    <a href="/?lang={{ lang }}" class="text-gray-300 hover:text-white" title="{{ tr.admin_nav_back_to_site }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                        </svg>
-                                    </a>
-                                    <a href="/logout?lang={{ lang }}" class="ml-4 text-gray-300 hover:text-white" title="{{ tr.admin_nav_logout }}">
-                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                        </svg>
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="-mr-2 flex md:hidden">
-                                <button type="button" id="mobile-admin-menu-button" class="relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800" aria-controls="mobile-admin-menu" aria-expanded="false">
-                                    <span class="absolute -inset-0.5"></span>
-                                    <span class="sr-only">Open admin menu</span>
-                                    <svg class="block h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
-                                    <svg class="hidden h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="hidden md:hidden" id="mobile-admin-menu">
-                    <div class="space-y-1 px-2 pb-3 pt-2 sm:px-3">
-                        <a href="/admin?lang={{ lang }}" class="text-gray-300 hover:bg-slate-700 hover:text-white block rounded-md px-3 py-2 text-base font-medium">{{ tr.admin_nav_dashboard }}</a>
-                        <a href="/admin/users?lang={{ lang }}" class="text-gray-300 hover:bg-slate-700 hover:text-white block rounded-md px-3 py-2 text-base font-medium">{{ tr.admin_nav_users }}</a>
-                        <a href="/admin/reviews?lang={{ lang }}" class="text-gray-300 hover:bg-slate-700 hover:text-white block rounded-md px-3 py-2 text-base font-medium">{{ tr.admin_nav_reviews }}</a>
-                        <a href="/admin/complaints?lang={{ lang }}" class="flex items-center text-gray-300 hover:bg-slate-700 hover:text-white rounded-md px-3 py-2 text-base font-medium">
-                            <span>{{ tr.admin_nav_complaints }}</span>
-                            {% if pending_complaints_count > 0 %}
-                                <span class="ml-2 inline-flex items-center justify-center h-6 w-6 rounded-full bg-red-500 text-xs font-bold text-white">{{ pending_complaints_count }}</span>
-                            {% endif %}
-                        </a>
-                        <a href="/?lang={{ lang }}" class="text-gray-300 hover:bg-slate-700 hover:text-white block rounded-md px-3 py-2 text-base font-medium">{{ tr.admin_nav_back_to_site }}</a>
-                        <a href="/logout?lang={{ lang }}" class="text-gray-300 hover:bg-slate-700 hover:text-white block rounded-md px-3 py-2 text-base font-medium">{{ tr.admin_nav_logout }}</a>
-                    </div>
-                </div>
-            </nav>
-            <header class="py-10">
-                <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                     {% if flash %}
-                    <div class="p-4 rounded-md mb-4 {{ 'bg-green-600/80' if flash.category == 'success' else 'bg-red-600/80' }}">
-                        <p class="text-white text-center font-medium">{{ flash.message }}</p>
-                    </div>
-                    {% endif %}
-                    <h1 class="text-3xl font-bold tracking-tight text-white">{% block title %}{% endblock %}</h1>
-                </div>
-            </header>
-        </div>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <h1 class="text-3xl font-bold text-white mb-8">{{ tr.nav_admin }}</h1>
     
-        <main class="-mt-32">
-            <div class="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
-                <div class="rounded-lg bg-slate-800 px-5 py-6 shadow sm:px-6">
-                    {% block admin_content %}{% endblock %}
-                </div>
+    <div class="flex flex-col md:flex-row gap-8">
+        <aside class="md:w-1/4">
+            <nav class="space-y-1 bg-glass rounded-lg p-4">
+                <a href="{{ url_for('admin.admin_dashboard') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'admin.admin_dashboard' %}bg-blue-600 text-white{% else %}text-gray-300 hover:bg-slate-700 hover:text-white{% endif %}">{{ tr.admin_dashboard }}</a>
+                <a href="{{ url_for('admin.admin_users_list') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'admin.admin_users_list' %}bg-blue-600 text-white{% else %}text-gray-300 hover:bg-slate-700 hover:text-white{% endif %}">{{ tr.admin_users }}</a>
+                <a href="{{ url_for('admin.admin_reviews_list') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'admin.admin_reviews_list' %}bg-blue-600 text-white{% else %}text-gray-300 hover:bg-slate-700 hover:text-white{% endif %}">{{ tr.admin_reviews }}</a>
+                <a href="{{ url_for('admin.admin_comments_list') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'admin.admin_comments_list' %}bg-blue-600 text-white{% else %}text-gray-300 hover:bg-slate-700 hover:text-white{% endif %}">{{ tr.admin_comments }}</a>
+                <a href="{{ url_for('admin.admin_complaints_list') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'admin.admin_complaints_list' %}bg-blue-600 text-white{% else %}text-gray-300 hover:bg-slate-700 hover:text-white{% endif %}">{{ tr.admin_complaints }}</a>
+            </nav>
+        </aside>
+        
+        <main class="flex-1">
+            <div class="bg-glass rounded-lg shadow p-6 min-h-full">
+                {# Сюда будет подставляться содержимое конкретных страниц админки #}
+                {% block admin_content %}{% endblock %}
             </div>
         </main>
     </div>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-</body>
-</html>
+</div>
+{% endblock %}
+
