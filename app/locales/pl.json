@@ -250,6 +250,8 @@
     "complaint_not_found": "Nie znaleziono skargi.",
     "admin_review_rejected_and_complaint_resolved": "Recenzja została odrzucona, a skarga rozwiązana.",
     "admin_comment_deleted_and_complaint_resolved": "Komentarz został usunięty, a skarga rozwiązana.",
-    "complaint_dismissed": "Skarga została odrzucona."
+    "complaint_dismissed": "Skarga została odrzucona.",
+    "admin_pending_comments": "Oczekujące komentarze",
+    "admin_not_clickable": "Ta sekcja nie jest klikalna"
 
 }

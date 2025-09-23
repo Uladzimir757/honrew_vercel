@@ -250,6 +250,8 @@
     "complaint_not_found": "Complaint not found.",
     "admin_review_rejected_and_complaint_resolved": "Review has been rejected and the complaint is resolved.",
     "admin_comment_deleted_and_complaint_resolved": "Comment has been deleted and the complaint is resolved.",
-    "complaint_dismissed": "Complaint has been dismissed."
+    "complaint_dismissed": "Complaint has been dismissed.",
+    "admin_pending_comments": "Pending Comments",
+    "admin_not_clickable": "This section is not clickable"
 
 }
