@@ -241,5 +241,15 @@
     "switch_camera_button": "Сменить камеру",
     "review_details_title": "Детали вашего отзыва",
     "company_reply_missing": "Компания еще не оставила ответ на этот отзыв.",
-    "no_comments_yet_message": "Комментариев пока нет."
+    "no_comments_yet_message": "Комментариев пока нет.",
+    "admin_action_dismiss": "Отклонить",
+    "admin_confirm_delete_content": "Вы уверены, что хотите предпринять действие в отношении этого контента? Это действие нельзя отменить.",
+    "admin_action_reject_review": "Отклонить обзор",
+    "admin_action_delete_comment": "Удалить комментарий",
+    "admin_no_pending_complaints": "Нет активных жалоб.",
+    "complaint_not_found": "Жалоба не найдена.",
+    "admin_review_rejected_and_complaint_resolved": "Обзор был отклонен, а жалоба решена.",
+    "admin_comment_deleted_and_complaint_resolved": "Комментарий был удален, а жалоба решена.",
+    "complaint_dismissed": "Жалоба была отклонена."
+
 }

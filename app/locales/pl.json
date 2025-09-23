@@ -241,5 +241,15 @@
     "switch_camera_button": "Przełącz kamerę",
     "review_details_title": "Szczegóły Twojej opinii",
     "company_reply_missing": "Firma nie zostawiła jeszcze odpowiedzi na tę opinię.",
-    "no_comments_yet_message": "Brak komentarzy."
+    "no_comments_yet_message": "Brak komentarzy.", 
+    "admin_action_dismiss": "Odrzuć",
+    "admin_confirm_delete_content": "Czy na pewno chcesz podjąć działania dotyczące tej treści? Tej akcji nie można cofnąć.",
+    "admin_action_reject_review": "Odrzuć recenzję",
+    "admin_action_delete_comment": "Usuń komentarz",
+    "admin_no_pending_complaints": "Brak oczekujących skarg.",
+    "complaint_not_found": "Nie znaleziono skargi.",
+    "admin_review_rejected_and_complaint_resolved": "Recenzja została odrzucona, a skarga rozwiązana.",
+    "admin_comment_deleted_and_complaint_resolved": "Komentarz został usunięty, a skarga rozwiązana.",
+    "complaint_dismissed": "Skarga została odrzucona."
+
 }

@@ -241,5 +241,15 @@
     "switch_camera_button": "Switch Camera",
     "review_details_title": "Your Review Details",
     "company_reply_missing": "The company has not yet left a response to this review.",
-    "no_comments_yet_message": "No comments yet."
+    "no_comments_yet_message": "No comments yet.", 
+    "admin_action_dismiss": "Dismiss",
+    "admin_confirm_delete_content": "Are you sure you want to take action on this content? This cannot be undone.",
+    "admin_action_reject_review": "Reject Review",
+    "admin_action_delete_comment": "Delete Comment",
+    "admin_no_pending_complaints": "No pending complaints.",
+    "complaint_not_found": "Complaint not found.",
+    "admin_review_rejected_and_complaint_resolved": "Review has been rejected and the complaint is resolved.",
+    "admin_comment_deleted_and_complaint_resolved": "Comment has been deleted and the complaint is resolved.",
+    "complaint_dismissed": "Complaint has been dismissed."
+
 }

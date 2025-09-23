@@ -207,11 +207,38 @@ def admin_complaints_list():
     return render_template("admin/complaints.html", complaints=results)
 
 
-@admin_bp.route("/complaints/<int:complaint_id>/resolve", methods=['POST'])
+@admin_bp.route("/complaints/<int:complaint_id>/handle", methods=['POST'])
 @admin_required
-def resolve_complaint(complaint_id: int):
-    lang = session.get('lang', 'en')
-    g.db.execute("UPDATE complaints SET status = 'resolved' WHERE id = %s", (complaint_id,))
-    session["flash"] = {"category": "success", "message": g.tr.get("complaint_resolved_success")}
-    return redirect(url_for('admin.admin_complaints_list', lang=lang))
+def handle_complaint(complaint_id: int):
+    action = request.form.get('action')
+    complaint = g.db.fetch_one("SELECT * FROM complaints WHERE id = %s", (complaint_id,))
+
+    if not complaint:
+        session["flash"] = {"category": "error", "message": g.tr.get("complaint_not_found")}
+        return redirect(url_for('admin.admin_complaints_list'))
+
+    if action == 'delete_content':
+        content_type = complaint['content_type']
+        content_id = complaint['content_id']
+        
+        if content_type == 'review':
+            g.db.execute("UPDATE videos SET status = 'rejected' WHERE id = %s", (content_id,))
+            message = g.tr.get("admin_review_rejected_and_complaint_resolved")
+        elif content_type == 'comment':
+            g.db.execute("DELETE FROM comments WHERE id = %s", (content_id,))
+            message = g.tr.get("admin_comment_deleted_and_complaint_resolved")
+        else:
+            message = g.tr.get("complaint_resolved_success") # Fallback
+            
+        g.db.execute("UPDATE complaints SET status = 'resolved' WHERE id = %s", (complaint_id,))
+        session["flash"] = {"category": "success", "message": message}
+
+    elif action == 'dismiss':
+        g.db.execute("UPDATE complaints SET status = 'resolved' WHERE id = %s", (complaint_id,))
+        session["flash"] = {"category": "info", "message": g.tr.get("complaint_dismissed")}
+    
+    else:
+        session["flash"] = {"category": "error", "message": "Invalid action"}
+
+    return redirect(url_for('admin.admin_complaints_list'))
 
