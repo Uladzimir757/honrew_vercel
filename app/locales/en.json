@@ -252,6 +252,8 @@
     "admin_comment_deleted_and_complaint_resolved": "Comment has been deleted and the complaint is resolved.",
     "complaint_dismissed": "Complaint has been dismissed.",
     "admin_pending_comments": "Pending Comments",
-    "admin_not_clickable": "This section is not clickable"
+    "admin_not_clickable": "This section is not clickable",
+    "admin_comments_title": "Comments Moderation",
+    "admin_table_comment": "Comment"
 
 }

@@ -252,6 +252,8 @@
     "admin_comment_deleted_and_complaint_resolved": "Komentarz został usunięty, a skarga rozwiązana.",
     "complaint_dismissed": "Skarga została odrzucona.",
     "admin_pending_comments": "Oczekujące komentarze",
-    "admin_not_clickable": "Ta sekcja nie jest klikalna"
+    "admin_not_clickable": "Ta sekcja nie jest klikalna",
+    "admin_comments_title": "Moderacja komentarzy",
+    "admin_table_comment": "Komentarz"
 
 }

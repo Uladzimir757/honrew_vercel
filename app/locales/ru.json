@@ -252,6 +252,8 @@
     "admin_comment_deleted_and_complaint_resolved": "Комментарий был удален, а жалоба решена.",
     "complaint_dismissed": "Жалоба была отклонена.",
     "admin_pending_comments": "Комментарии на проверку",
-    "admin_not_clickable": "Этот раздел не кликабелен"
+    "admin_not_clickable": "Этот раздел не кликабелен",
+    "admin_comments_title": "Модерация комментариев",
+    "admin_table_comment": "Комментарий"
 
 }
