@@ -1,10 +1,11 @@
 # Файл: app/routers/admin.py
 import math
+import logging
 from flask import (Blueprint, request, session, g, render_template, 
                    redirect, url_for)
 
 from app.config import settings
-from app.utils import send_email_notification, logger
+from app.utils import send_email_notification
 from app.decorators import admin_required
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
@@ -15,11 +16,12 @@ def admin_dashboard():
     total_users = g.db.fetch_one("SELECT COUNT(*) AS total FROM users")['total']
     total_reviews = g.db.fetch_one("SELECT COUNT(*) AS total FROM videos")['total']
     total_likes = g.db.fetch_one("SELECT COUNT(*) AS total FROM likes")['total']
-    total_comments = g.db.fetch_one("SELECT COUNT(*) AS total FROM comments")['total']
+    # ИЗМЕНЕНИЕ: Считаем только комментарии, ожидающие проверки
+    pending_comments = g.db.fetch_one("SELECT COUNT(*) AS total FROM comments WHERE status = 'pending_review'")['total']
     
     stats = {
         "users": total_users, "reviews": total_reviews, 
-        "likes": total_likes, "comments": total_comments
+        "likes": total_likes, "comments": pending_comments
     }
     return render_template("admin/dashboard.html", stats=stats)
 
@@ -62,10 +64,7 @@ def admin_reviews_list():
 def _handle_review_status_change(video_id: int, new_status: str):
     g.db.execute("UPDATE videos SET status = %s WHERE id = %s", (new_status, video_id))
     
-    video_author_query = """
-        SELECT v.title, u.email FROM videos v JOIN users u ON v.user_id = u.id
-        WHERE v.id = %s
-    """
+    video_author_query = "SELECT v.title, u.email FROM videos v JOIN users u ON v.user_id = u.id WHERE v.id = %s"
     video_author_data = g.db.fetch_one(video_author_query, (video_id,))
     lang = session.get('lang', 'en')
 
@@ -77,12 +76,10 @@ def _handle_review_status_change(video_id: int, new_status: str):
         send_email_notification(
             recipients=[video_author_data["email"]],
             subject_key=subject_key, body_key=body_key,
-            template_vars={
-                "video_title": video_author_data["title"],
-                "video_link": video_link
-            })
+            template_vars={"video_title": video_author_data["title"], "video_link": video_link}
+        )
     else:
-        logger.warning(f"Не удалось найти автора или отзыв для video_id: {video_id} при смене статуса.")
+        logging.warning(f"Could not find author or review for video_id: {video_id} on status change.")
 
     message = g.tr["admin_review_approved"] if new_status == 'published' else g.tr["admin_review_rejected"]
     session["flash"] = {"category": "success", "message": message}
@@ -135,6 +132,66 @@ def admin_delete_user(user_id: int):
     session["flash"] = {"category": "success", "message": g.tr.get("admin_user_deleted_success")}
     return redirect(url_for('admin.admin_users_list', lang=lang))
 
+# --- НОВЫЙ КОД ДЛЯ МОДЕРАЦИИ КОММЕНТАРИЕВ ---
+
+@admin_bp.route("/comments")
+@admin_required
+def admin_comments_list():
+    """Отображает список комментариев, ожидающих модерации."""
+    query = """
+        SELECT c.*, u.email as author_email, v.title as video_title
+        FROM comments c
+        JOIN users u ON c.user_id = u.id
+        JOIN videos v ON c.video_id = v.id
+        WHERE c.status = 'pending_review' 
+        ORDER BY c.created_at DESC
+    """
+    comments = g.db.fetch_all(query)
+    return render_template("admin/comments.html", comments=comments)
+
+def _handle_comment_status_change(comment_id: int, new_status: str):
+    """Общая функция для одобрения/отклонения комментариев."""
+    g.db.execute("UPDATE comments SET status = %s WHERE id = %s", (new_status, comment_id))
+    
+    # Отправка email только при одобрении
+    if new_status == 'published':
+        comment_info_query = """
+            SELECT c.content, u.email, v.id as video_id, v.title as video_title
+            FROM comments c
+            JOIN users u ON c.user_id = u.id
+            JOIN videos v ON c.video_id = v.id
+            WHERE c.id = %s
+        """
+        comment_info = g.db.fetch_one(comment_info_query, (comment_id,))
+        lang = session.get('lang', 'en')
+
+        if comment_info:
+            video_link = url_for('videos.view_video_page', video_id=comment_info["video_id"], lang=lang, _external=True)
+            send_email_notification(
+                recipients=[comment_info["email"]],
+                subject_key="email_comment_approved_subject", 
+                body_key="email_comment_approved_body",
+                template_vars={
+                    "video_title": comment_info["video_title"],
+                    "comment_content": comment_info["content"],
+                    "video_link": video_link
+                })
+            
+    message = g.tr.get("admin_comment_approved") if new_status == 'published' else g.tr.get("admin_comment_rejected")
+    session["flash"] = {"category": "success", "message": message}
+    return redirect(url_for('admin.admin_comments_list'))
+
+@admin_bp.route("/comments/<int:comment_id>/approve", methods=['POST'])
+@admin_required
+def approve_comment(comment_id: int):
+    return _handle_comment_status_change(comment_id, 'published')
+
+@admin_bp.route("/comments/<int:comment_id>/reject", methods=['POST'])
+@admin_required
+def reject_comment(comment_id: int):
+    return _handle_comment_status_change(comment_id, 'rejected')
+
+# --- КОНЕЦ НОВОГО КОДА ---
 
 @admin_bp.route("/complaints")
 @admin_required
@@ -157,3 +214,4 @@ def resolve_complaint(complaint_id: int):
     g.db.execute("UPDATE complaints SET status = 'resolved' WHERE id = %s", (complaint_id,))
     session["flash"] = {"category": "success", "message": g.tr.get("complaint_resolved_success")}
     return redirect(url_for('admin.admin_complaints_list', lang=lang))
+
