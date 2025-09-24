@@ -259,6 +259,8 @@
     "admin_users": "Użytkownicy",
     "admin_reviews": "Recenzje",
     "admin_comments": "Komentarze",
-    "admin_complaints": "Skargi"
+    "admin_complaints": "Skargi",
+    "review_published_success": "Twoja recenzja została pomyślnie opublikowana!",
+    "review_moderation_pending": "Dziękujemy! Twoja recenzja została przesłana do moderacji i wkrótce pojawi się na stronie."
 
 }
