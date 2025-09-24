@@ -305,7 +305,7 @@ def edit_video(video_id):
             WHERE id = %s
         """
         g.db.execute(query, (title, description, what, where, category, video_id))
-        session["flash"] = {"category": "success", "message": g.tr["edit_success_message"]}
+        session["flash"] = {"category": "success", "message": g.tr["video_updated_success"]}
         return redirect(url_for('videos.view_video_page', video_id=video_id, lang=g.lang))
         
     return render_template('edit_video.html', video=video)
