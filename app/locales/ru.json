@@ -254,6 +254,11 @@
     "admin_pending_comments": "Комментарии на проверку",
     "admin_not_clickable": "Этот раздел не кликабелен",
     "admin_comments_title": "Модерация комментариев",
-    "admin_table_comment": "Комментарий"
+    "admin_table_comment": "Комментарий",
+    "admin_dashboard": "Панель",
+    "admin_users": "Пользователи",
+    "admin_reviews": "Обзоры",
+    "admin_comments": "Комментарии",
+    "admin_complaints": "Жалобы"
 
 }

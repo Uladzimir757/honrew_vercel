@@ -192,7 +192,6 @@
     "admin_user_deleted_success": "Użytkownik został pomyślnie usunięty.",
     "admin_table_category": "Kategoria",
     "admin_action_edit": "Edytuj",
-    "nav_admin": "Admin",
     "profile_danger_zone": "Strefa zagrożenia",
     "profile_delete_warning": "Usunięcie konta jest działaniem nieodwracalnym. Wszystkie Twoje opinie i dane zostaną trwale usunięte.",
     "profile_delete_button": "Zażądaj usunięcia konta",
@@ -254,6 +253,12 @@
     "admin_pending_comments": "Oczekujące komentarze",
     "admin_not_clickable": "Ta sekcja nie jest klikalna",
     "admin_comments_title": "Moderacja komentarzy",
-    "admin_table_comment": "Komentarz"
+    "admin_table_comment": "Komentarz", 
+    "nav_admin": "Panel administratora",
+    "admin_dashboard": "Panel",
+    "admin_users": "Użytkownicy",
+    "admin_reviews": "Recenzje",
+    "admin_comments": "Komentarze",
+    "admin_complaints": "Skargi"
 
 }
