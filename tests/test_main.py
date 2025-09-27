@@ -1,31 +1,25 @@
 import pytest
-from httpx import AsyncClient
 
-@pytest.mark.asyncio
-async def test_read_main(async_client: AsyncClient):
+def test_read_main(client):
     """Тест: главная страница должна открываться успешно (код 200)."""
-    response = await async_client.get("/")
+    response = client.get("/")
     assert response.status_code == 200
-    assert "Сила в правде" in response.text
+    assert "Сила в правде" in response.data.decode('utf-8')
 
-@pytest.mark.asyncio
-async def test_login_page_loads(async_client: AsyncClient):
+def test_login_page_loads(client):
     """Тест: страница входа должна открываться успешно (код 200)."""
-    response = await async_client.get("/login")
+    response = client.get("/login")
     assert response.status_code == 200
-    assert "Вход в аккаунт" in response.text
+    assert "Вход в аккаунт" in response.data.decode('utf-8')
 
-@pytest.mark.asyncio
-async def test_profile_redirects_unauthenticated(async_client: AsyncClient):
+def test_profile_redirects_unauthenticated(client):
     """Тест: неавторизованный пользователь должен быть перенаправлен со страницы профиля."""
-    response = await async_client.get("/profile", follow_redirects=False)
-    # Ожидаем код 303 See Other, который перенаправляет на страницу логина
-    assert response.status_code == 303
+    response = client.get("/profile", follow_redirects=False)
+    assert response.status_code == 302
     assert "/login" in response.headers["location"]
 
-@pytest.mark.asyncio
-async def test_profile_loads_authenticated(authenticated_client: AsyncClient):
+def test_profile_loads_authenticated(authenticated_client):
     """Тест: авторизованный пользователь должен успешно загружать страницу профиля."""
-    response = await authenticated_client.get("/profile")
+    response = authenticated_client.get("/profile")
     assert response.status_code == 200
-    assert "Мой профиль" in response.text
+    assert "Мой профиль" in response.data.decode('utf-8')

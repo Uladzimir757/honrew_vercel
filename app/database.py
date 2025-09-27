@@ -1,80 +1,125 @@
-import databases
-import sqlalchemy
-from .config import settings
+# app/database.py
+import sqlite3
+import os
+from flask import g
+from app.config import settings
 
-database = databases.Database(settings.DATABASE_URL)
-metadata = sqlalchemy.MetaData()
+try:
+    import psycopg2
+    import psycopg2.extras
+    _HAS_PSYCOPG2 = True
+except ImportError:
+    _HAS_PSYCOPG2 = False
 
-users = sqlalchemy.Table(
-    "users", metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("email", sqlalchemy.String, unique=True, nullable=False),
-    sqlalchemy.Column("username", sqlalchemy.String, unique=True),
-    sqlalchemy.Column("bio", sqlalchemy.Text),
-    sqlalchemy.Column("avatar_filename", sqlalchemy.String),
-    sqlalchemy.Column("hashed_password", sqlalchemy.String, nullable=False),
-    sqlalchemy.Column("is_admin", sqlalchemy.Boolean, default=False, nullable=False),
-    sqlalchemy.Column("is_verified", sqlalchemy.Boolean, default=False, nullable=False),
-    sqlalchemy.Column("verification_token", sqlalchemy.String),
-    sqlalchemy.Column("password_reset_token", sqlalchemy.String),
-    sqlalchemy.Column("password_reset_expires", sqlalchemy.TIMESTAMP),
-    sqlalchemy.Column("delete_token", sqlalchemy.String),
-    sqlalchemy.Column("delete_token_expires", sqlalchemy.TIMESTAMP),
-    sqlalchemy.Column("user_type", sqlalchemy.String, default='client', nullable=False)
-)
+class DatabaseManager:
+    def __init__(self, database_url):
+        self.database_url = database_url
+        self.connection = None
+        self.db_type = 'sqlite'
+        self.param_style = 'qmark' # Default for SQLite
 
-videos = sqlalchemy.Table(
-    "videos", metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("title", sqlalchemy.String, nullable=False),
-    sqlalchemy.Column("description", sqlalchemy.Text),
-    sqlalchemy.Column("category", sqlalchemy.String, nullable=False),
-    sqlalchemy.Column("filename", sqlalchemy.String, nullable=False),
-    sqlalchemy.Column("preview_filename", sqlalchemy.String),
-    sqlalchemy.Column("user_id", sqlalchemy.Integer, sqlalchemy.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-    sqlalchemy.Column("what", sqlalchemy.String),
-    sqlalchemy.Column("where", sqlalchemy.String),
-    sqlalchemy.Column("media_type", sqlalchemy.String, default='video'),
-    sqlalchemy.Column("created_at", sqlalchemy.TIMESTAMP, server_default=sqlalchemy.func.now()),
-    sqlalchemy.Column("rating", sqlalchemy.Integer),
-    sqlalchemy.Column("status", sqlalchemy.String, default='pending_review', nullable=False)
-)
+        if self.database_url.startswith('postgresql'):
+            if not _HAS_PSYCOPG2:
+                # В продакшене это критическая ошибка, в тестах можно перехватить
+                raise ImportError("psycopg2-binary is required for PostgreSQL connections but not found.")
+            self.db_type = 'postgresql'
+            self.param_style = 'pyformat' # %s for psycopg2
+            self.connection_args = {
+                "dsn": self.database_url,
+                "cursor_factory": psycopg2.extras.RealDictCursor
+            }
+        elif self.database_url.startswith('sqlite'):
+            self.db_type = 'sqlite'
+            self.param_style = 'qmark' # ? for sqlite3
+            self.connection_args = {
+                "database": self.database_url.replace('sqlite:///', ''),
+                "check_same_thread": False 
+            }
+            if ':memory:' in self.database_url or './test.db' in self.database_url:
+                self.connection_args['uri'] = True
+        else:
+            raise ValueError(f"Unsupported database URL schema: {database_url}")
 
-likes = sqlalchemy.Table(
-    "likes", metadata,
-    sqlalchemy.Column("video_id", sqlalchemy.Integer, sqlalchemy.ForeignKey("videos.id", ondelete="CASCADE"), nullable=False),
-    sqlalchemy.Column("user_id", sqlalchemy.Integer, sqlalchemy.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-    sqlalchemy.PrimaryKeyConstraint("video_id", "user_id"),
-)
+    def get_connection(self):
+        if self.connection is None:
+            if self.db_type == 'postgresql':
+                self.connection = psycopg2.connect(**self.connection_args)
+            elif self.db_type == 'sqlite':
+                self.connection = sqlite3.connect(**self.connection_args)
+                self.connection.row_factory = sqlite3.Row 
+            
+        return self.connection
 
-comments = sqlalchemy.Table(
-    "comments", metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("content", sqlalchemy.Text, nullable=False),
-    sqlalchemy.Column("created_at", sqlalchemy.TIMESTAMP, server_default=sqlalchemy.func.now()),
-    sqlalchemy.Column("video_id", sqlalchemy.Integer, sqlalchemy.ForeignKey("videos.id", ondelete="CASCADE"), nullable=False),
-    sqlalchemy.Column("user_id", sqlalchemy.Integer, sqlalchemy.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-    sqlalchemy.Column("status", sqlalchemy.String, default='pending_review', nullable=False)
-)
+    def close_connection(self):
+        if self.connection is not None:
+            self.connection.close()
+            self.connection = None
 
-complaints = sqlalchemy.Table(
-    "complaints", metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("content_id", sqlalchemy.Integer, nullable=False),
-    sqlalchemy.Column("content_type", sqlalchemy.String, nullable=False), # 'review' или 'comment'
-    sqlalchemy.Column("reason", sqlalchemy.String, nullable=False),
-    sqlalchemy.Column("user_id", sqlalchemy.Integer, sqlalchemy.ForeignKey("users.id", ondelete="SET NULL")),
-    sqlalchemy.Column("created_at", sqlalchemy.TIMESTAMP, server_default=sqlalchemy.func.now()),
-    sqlalchemy.Column("status", sqlalchemy.String, default='pending', nullable=False) # 'pending' или 'resolved'
-)
+    def execute_query(self, query, params=()):
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        conn.commit()
+        return cursor
 
-# --- НОВАЯ ТАБЛИЦА ДЛЯ ОТВЕТОВ КОМПАНИЙ ---
-company_replies = sqlalchemy.Table(
-    "company_replies", metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("content", sqlalchemy.Text, nullable=False),
-    sqlalchemy.Column("video_id", sqlalchemy.Integer, sqlalchemy.ForeignKey("videos.id", ondelete="CASCADE"), unique=True, nullable=False),
-    sqlalchemy.Column("user_id", sqlalchemy.Integer, sqlalchemy.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-    sqlalchemy.Column("created_at", sqlalchemy.TIMESTAMP, server_default=sqlalchemy.func.now()),
-    sqlalchemy.Column("updated_at", sqlalchemy.TIMESTAMP, server_default=sqlalchemy.func.now(), onupdate=sqlalchemy.func.now())
-)
+    def fetch_one(self, query, params=()):
+        cursor = self.get_connection().cursor()
+        cursor.execute(query, params)
+        return cursor.fetchone()
+
+    def fetch_all(self, query, params=()):
+        cursor = self.get_connection().cursor()
+        cursor.execute(query, params)
+        return cursor.fetchall()
+        
+    def create_all_tables(self, schema_file='schema.sql'):
+        conn = self.get_connection()
+        with open(schema_file, 'r', encoding='utf-8') as f:
+            script = f.read()
+            if self.db_type == 'sqlite':
+                conn.executescript(script)
+            elif self.db_type == 'postgresql':
+                cursor = conn.cursor()
+                for statement in script.split(';'):
+                    if statement.strip():
+                        # PostgreSQL не поддерживает множественные statements в execute()
+                        # А также нужно обрабатывать DROP TABLE IF EXISTS без CASCADE
+                        try:
+                            cursor.execute(statement)
+                        except psycopg2.Error as e:
+                            # 42P01 - undefined_table, если DROP IF EXISTS пытается удалить несуществующую таблицу
+                            # 25P02 - in_failed_sql_transaction, если предыдущая ошибка привела к состоянию отката
+                            # Если это ошибка, которую мы ожидаем (таблица не существует), то игнорируем
+                            if e.pgcode == '42P01': # undefined_table
+                                conn.rollback() # Откатываем транзакцию, если была ошибка, но хотим продолжить
+                            else:
+                                raise 
+                conn.commit()
+        conn.commit() # Важно для подтверждения изменений
+
+    def recreate_tables(self, schema_file='schema.sql'):
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        if self.db_type == 'sqlite':
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            tables = cursor.fetchall()
+            for table in tables:
+                table_name = table['name']
+                if table_name.startswith('sqlite_'):
+                    continue
+                cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
+        elif self.db_type == 'postgresql':
+            cursor.execute("""
+                SELECT tablename FROM pg_tables
+                WHERE schemaname = 'public' AND tablename NOT LIKE 'pg_%' AND tablename NOT LIKE 'sql_%';
+            """)
+            tables = cursor.fetchall()
+            for table in tables:
+                table_name = table['tablename']
+                cursor.execute(f"DROP TABLE IF EXISTS \"{table_name}\" CASCADE;") # С CASCADE для PostgreSQL
+        
+        conn.commit()
+        self.create_all_tables(schema_file)
+
+db_manager = DatabaseManager(settings.DATABASE_URL)
