@@ -5,15 +5,15 @@ import json
 import requests
 import boto3
 import traceback
-from botocore.exceptions import ClientError
-from flask import g  # <-- ИЗМЕНЕНИЕ: Убрали Request, добавили g
+from botocore.exceptions import BotoCoreError, ClientError
+from flask import g
 from app.config import settings
 
 # --- Настройка логирования ---
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# --- ОБНОВЛЕННАЯ функция отправки Email ---
+
 def send_email_notification(
     recipients: list[str],
     subject_key: str,
@@ -21,18 +21,19 @@ def send_email_notification(
     template_vars: dict = None
 ):
     """
-    Отправляет email, используя API MailChannels.
-    Берёт язык и переводы из глобального контекста 'g'.
+    Отправляет email, используя API SendGrid.
     """
-    # --- ИЗМЕНЕНИЕ: Убираем импорт и вызов get_language_and_translations ---
-    # Вместо этого, получаем tr напрямую из g
+    if not settings.SENDGRID_API_KEY:
+        logger.error("SENDGRID_API_KEY is not set. Cannot send email.")
+        return
+
     tr = g.get('tr', {})
     
     subject = tr.get(subject_key, "Notification")
     body_template = tr.get(body_key, "")
     body = body_template.format(**template_vars) if template_vars else body_template
 
-    mailchannels_data = {
+    sendgrid_data = {
         "personalizations": [{"to": [{"email": email} for email in recipients]}],
         "from": {"email": settings.MAIL_FROM_EMAIL, "name": "Honest Reviews"},
         "subject": subject,
@@ -41,22 +42,30 @@ def send_email_notification(
 
     try:
         response = requests.post(
-            "https://api.mailchannels.net/tx/v1/send",
-            headers={"Content-Type": "application/json"},
-            json=mailchannels_data,
+            "https://api.sendgrid.com/v3/mail/send",
+            headers={
+                "Authorization": f"Bearer {settings.SENDGRID_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json=sendgrid_data,
         )
-        response.raise_for_status()
-        logger.info(f"Email successfully sent to {recipients}")
+        
+        # SendGrid возвращает 202 Accepted в случае успеха
+        if response.status_code != 202:
+            # Эта строка вызовет ошибку для кодов 4xx/5xx, что будет поймано в except
+            response.raise_for_status()
+            
+        logger.info(f"Email successfully sent to {recipients} via SendGrid")
+
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error sending email via MailChannels: {e}")
+        logger.error(f"Error sending email via SendGrid: {e}")
         if e.response is not None:
             logger.error(f"Server Response: {e.response.status_code} {e.response.text}")
     except Exception as e:
         logger.error(f"Critical error while sending email: {e}")
 
-# --- Функция загрузки файла в R2 (остается без изменений) ---
+
 def upload_file_to_r2(file_obj, object_name: str) -> bool:
-    # ... (код этой функции остается прежним)
     try:
         s3_client = boto3.client(
             service_name='s3',

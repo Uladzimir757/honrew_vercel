@@ -16,8 +16,9 @@ class Settings(BaseSettings):
     S3_BUCKET_NAME: str
     R2_PUBLIC_URL: str
     
-    # --- Настройки почты (для MailChannels нужна только одна) ---
+    # --- Настройки почты (SendGrid) ---
     MAIL_FROM_EMAIL: str 
+    SENDGRID_API_KEY: str  # <-- ДОБАВЛЕНО
 
     # --- Общие настройки ---
     ITEMS_PER_PAGE: int = 9
