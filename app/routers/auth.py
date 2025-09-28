@@ -67,7 +67,7 @@ def handle_registration():
 def verify_email(token: str):
     param_ph = _get_param_placeholder()
     query = f"UPDATE users SET is_verified = {param_ph}, verification_token = NULL WHERE verification_token = {param_ph}"
-    cursor = g.db.execute_query(query, (True, token))
+    cursor = g.db.execute(query, (True, token))
     
     if cursor.rowcount > 0:
         session["flash"] = {"category": "success", "message": g.tr["verification_success"]}
