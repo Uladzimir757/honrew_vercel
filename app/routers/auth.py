@@ -49,7 +49,7 @@ def handle_registration():
             INSERT INTO users (email, hashed_password, verification_token, user_type, is_admin, is_verified) 
             VALUES ({param_ph}, {param_ph}, {param_ph}, {param_ph}, {param_ph}, {param_ph})
         """
-        g.db.execute_query(query, (email, hashed_password, verification_token, user_type, False, False))
+        g.db.execute(query, (email, hashed_password, verification_token, user_type, False, False))
 
         verification_link = url_for('auth.verify_email', token=verification_token, lang=session.get('lang'), _external=True)
         send_email_notification(
