@@ -3,7 +3,8 @@ import os
 import uuid
 import math
 import secrets
-from datetime import datetime, timezone
+# ИЗМЕНЕНИЕ: Добавлен timedelta
+from datetime import datetime, timezone, timedelta
 from flask import (Blueprint, request, session, g, render_template,
                    redirect, url_for)
 
@@ -64,9 +65,12 @@ def handle_avatar_upload():
     file_extension = os.path.splitext(avatar_file.filename)[1]
     unique_filename = f"avatars/{uuid.uuid4()}{file_extension}"
     
+    # Рекомендуется использовать streaming upload для эффективности, 
+    # но текущий подход с read() будет работать для небольших файлов.
     file_content = avatar_file.read()
 
     try:
+        # Здесь предполагается, что g.r2 - это ваш клиент для работы с R2 (например, Boto3)
         g.r2.put(unique_filename, file_content, httpMetadata={'contentType': avatar_file.content_type})
     except Exception as e:
         logger.error(f"Ошибка загрузки аватара в R2: {e}")
@@ -121,7 +125,6 @@ def request_profile_deletion():
     
     delete_link = url_for('users.confirm_profile_deletion', token=token, lang=lang, _external=True)
     send_email_notification(
-        request=request,
         recipients=[g.user["email"]],
         subject_key="email_delete_account_subject",
         body_key="email_delete_account_body",
@@ -140,7 +143,7 @@ def confirm_profile_deletion(token: str):
 
     if not user_to_delete:
         session["flash"] = {"category": "error", "message": g.tr["error_invalid_token"]}
-        return redirect(url_for('pages.read_root', lang=lang))
+        return redirect(url_for('pages.home', lang=lang))
 
     user_id_to_delete = user_to_delete["id"]
 
@@ -154,12 +157,15 @@ def confirm_profile_deletion(token: str):
     except Exception as e:
         logger.error(f"Ошибка при удалении файлов пользователя {user_id_to_delete} из R2: {e}")
 
+    # ВАЖНО: Эта команда сработает без ошибок только если в схеме БД 
+    # для внешних ключей (videos.user_id, comments.user_id и т.д.)
+    # установлено правило ON DELETE CASCADE.
     g.db.execute("DELETE FROM users WHERE id = %s", (user_id_to_delete,))
     
     session.clear()
     session['lang'] = lang
     session["flash"] = {"category": "success", "message": g.tr["profile_deleted_success"]}
-    return redirect(url_for('pages.read_root', lang=lang))
+    return redirect(url_for('pages.home', lang=lang))
 
 @users_bp.route("/user/<int:user_id>")
 def user_profile_page(user_id: int):
@@ -167,7 +173,7 @@ def user_profile_page(user_id: int):
     profile_user = g.db.fetch_one("SELECT * FROM users WHERE id = %s", (user_id,))
     
     if not profile_user:
-        return redirect(url_for('pages.read_root', lang=session.get('lang')))
+        return redirect(url_for('pages.home', lang=session.get('lang')))
 
     offset = (page - 1) * settings.ITEMS_PER_PAGE
     
