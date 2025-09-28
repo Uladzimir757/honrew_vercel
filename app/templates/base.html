@@ -6,7 +6,9 @@
     <title>{{ title or tr.title }}</title>
     
     <meta name="description" content="{{ meta_description or tr.default_meta_description }}">
-    {% block meta_tags %}{% endblock meta_tags %}
+    <link rel="canonical" href="{{ request.url_root.rstrip('/') }}{{ request.path }}" />
+
+    {% block social_meta_tags %}{% endblock social_meta_tags %}
 
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
@@ -35,14 +37,12 @@
             background-repeat: no-repeat;
             background-image: url("{{ url_for('static', filename='backgrounds/' + (background_image or 'index.jpg')) }}");
         }
-        
-        /* ИЗМЕНЕНИЕ 3: Убираем body::before, так как фон шапки и подвала теперь задается напрямую */
 
         .font-montserrat { font-family: 'Montserrat', sans-serif; }
         .font-roboto { font-family: 'Roboto', sans-serif; }
         
         .custom-header-footer {
-            background-color: rgba(15, 23, 42, 0.859); /* slate-800 с ~90% непрозрачности */
+            background-color: rgba(15, 23, 42, 0.859);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
         }
@@ -117,10 +117,6 @@
         </header>
         
         <main class="flex-grow pb-32">
-            <div class="absolute inset-0 -z-10">
-                <img src="{{ url_for('static', filename='backgrounds/' + (background_image or 'index.jpg')) }}" alt="" class="h-full w-full object-cover fixed">
-            </div>
-            
             {% if flash %}
              <div class="fixed top-20 right-4 z-50 p-4 rounded-md shadow-lg {{ 'bg-green-600' if flash.category == 'success' else 'bg-red-600' }}">
                 <p class="text-white font-medium">{{ flash.message }}</p>

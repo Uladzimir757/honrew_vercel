@@ -2,9 +2,20 @@
 
 {% block body_attributes %}data-lang="{{ lang }}"{% endblock %}
 
-{% block meta_tags %}
-<meta name="description" content="{{ description }}">
-{% endblock meta_tags %}
+{% block social_meta_tags %}
+<meta property="og:type" content="video.other">
+<meta property="og:url" content="{{ request.url }}">
+<meta property="og:title" content="{{ video.title }}">
+<meta property="og:description" content="{{ description }}">
+<meta property="og:image" content="{{ preview_url or media_url }}">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta property="twitter:url" content="{{ request.url }}">
+<meta property="twitter:title" content="{{ video.title }}">
+<meta property="twitter:description" content="{{ description }}">
+<meta property="twitter:image" content="{{ preview_url or media_url }}">
+{% endblock social_meta_tags %}
+
 
 {% block content %}
 <div class="py-12">

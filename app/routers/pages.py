@@ -1,12 +1,11 @@
 # Файл: app/routers/pages.py
 import math
-from flask import Blueprint, request, render_template, Response, g
+from flask import Blueprint, request, render_template, Response, g, url_for
 from app.config import settings
 from app.decorators import login_required
 
 pages_bp = Blueprint('pages', __name__)
 
-# --- ВОТ ИСПРАВЛЕНИЕ: возвращаем endpoint='home' ---
 @pages_bp.route("/", methods=['GET'], endpoint='home')
 def read_root():
     return render_template("index.html")
@@ -69,18 +68,33 @@ def record_page():
 
 @pages_bp.route("/sitemap.xml", methods=['GET'])
 def sitemap():
-    base_url = "https://videos-review.com" 
+    # Собираем статические страницы с метаданными
+    urls = [
+        {'loc': url_for('pages.home', _external=True), 'changefreq': 'daily', 'priority': '1.0'},
+        {'loc': url_for('videos.live_page', _external=True), 'changefreq': 'daily', 'priority': '0.9'},
+        {'loc': url_for('videos.category_page', category_name='real-estate', _external=True), 'changefreq': 'weekly', 'priority': '0.8'},
+        {'loc': url_for('videos.category_page', category_name='auto', _external=True), 'changefreq': 'weekly', 'priority': '0.8'},
+        {'loc': url_for('videos.category_page', category_name='services', _external=True), 'changefreq': 'weekly', 'priority': '0.8'},
+        {'loc': url_for('pages.terms_page', _external=True), 'changefreq': 'monthly', 'priority': '0.5'},
+        {'loc': url_for('pages.privacy_page', _external=True), 'changefreq': 'monthly', 'priority': '0.5'},
+        {'loc': url_for('pages.contact_page', _external=True), 'changefreq': 'monthly', 'priority': '0.5'},
+    ]
     
-    query = "SELECT id FROM videos WHERE status = 'published' ORDER BY id DESC"
+    # Получаем динамические страницы (видео) с датой обновления
+    query = "SELECT id, created_at FROM videos WHERE status = 'published' ORDER BY id DESC"
     all_videos = g.db.fetch_all(query)
     
-    xml_content = '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-    static_pages = ["/", "/live", "/category/real-estate", "/category/auto", "/category/services", "/terms", "/privacy", "/contact"]
-    for page in static_pages:
-        xml_content += f'<url><loc>{base_url}{page}</loc></url>'
     if all_videos:
         for video in all_videos:
-            xml_content += f'<url><loc>{base_url}/video/{video["id"]}</loc></url>'
-    xml_content += '</urlset>'
+            url_info = {
+                'loc': url_for('videos.view_video_page', video_id=video["id"], _external=True),
+                'lastmod': video["created_at"].strftime('%Y-%m-%d'),
+                'changefreq': 'yearly',
+                'priority': '0.7'
+            }
+            urls.append(url_info)
     
-    return Response(xml_content, mimetype="application/xml")
+    # Рендерим шаблон, передавая в него список URL
+    sitemap_xml = render_template("sitemap.xml", urls=urls)
+    
+    return Response(sitemap_xml, mimetype="application/xml")
