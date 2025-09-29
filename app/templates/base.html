@@ -26,16 +26,27 @@
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(51, 65, 85, 0.5);
         }
-        body {
-            position: relative;
+
+        /* --- НОВЫЙ КОД ДЛЯ ФОНА --- */
+        body::before {
+            content: "";
+            position: fixed; /* Фиксирует фон относительно окна браузера */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Помещает фон позади всего контента */
+            
+            background-image: url("{{ url_for('static', filename='backgrounds/' + (background_image or 'index.jpg')) }}");
             background-size: cover;
             background-position: center;
-            background-attachment: fixed;
+            background-attachment: fixed; /* Уже не обязательно из-за position:fixed, но оставляем для надежности */
             background-repeat: no-repeat;
-            background-image: url("{{ url_for('static', filename='backgrounds/' + (background_image or 'index.jpg')) }}") !important;
         }
+
         .font-montserrat { font-family: 'Montserrat', sans-serif; }
         .font-roboto { font-family: 'Roboto', sans-serif; }
+        
         .custom-header-footer {
             background-color: rgba(15, 23, 42, 0.859);
             backdrop-filter: blur(8px);
