@@ -2,10 +2,18 @@
 
 from .auth import auth_bp
 from .pages import pages_bp
-from .videos import videos_bp
+from .reviews import reviews_bp  # <-- ИЗМЕНЕНИЕ: было .videos import videos_bp
 from .users import users_bp
 from .complaints import complaints_bp
 from .admin import admin_bp
+from .categories import categories_bp
 
-# Этот код собирает все blueprint'ы в одном месте,
-# чтобы их можно было импортировать одной строкой.
+__all__ = [
+    "auth_bp",
+    "pages_bp",
+    "reviews_bp",
+    "users_bp",
+    "complaints_bp",
+    "admin_bp",
+    "categories_bp",
+]
