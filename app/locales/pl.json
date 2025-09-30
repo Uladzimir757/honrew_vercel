@@ -262,6 +262,8 @@
     "admin_complaints": "Skargi",
     "review_published_success": "Twoja recenzja została pomyślnie opublikowana!",
     "review_moderation_pending": "Dziękujemy! Twoja recenzja została przesłana do moderacji i wkrótce pojawi się na stronie.",
-    "error_access_denied": "Dostęp zabroniony. Nie masz uprawnień administratora."
+    "error_access_denied": "Dostęp zabroniony. Nie masz uprawnień administratora.",
+    "admin_categories": "Kategorie",
+    "admin_return_to_site": "Wróć na stronę"
 
 }

@@ -9,19 +9,19 @@
 <body class="h-full flex">
 
     <aside class="w-64 bg-slate-800 p-6 flex flex-col">
-        <h2 class="text-2xl font-bold mb-8">Админ-панель</h2>
+        <h2 class="text-2xl font-bold mb-8">{{ tr.admin_panel_title }}</h2>
         <nav class="flex-grow">
             <ul class="space-y-2">
-                <li><a href="{{ url_for('admin.manage_dashboard') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>แดชบอร์ด</span></a></li>
-                <li><a href="{{ url_for('admin.manage_users') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>Пользователи</span></a></li>
-                <li><a href="{{ url_for('admin.manage_reviews') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>Отзывы</span></a></li>
-                <li><a href="{{ url_for('admin.manage_categories') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>Категории</span></a></li>
-                <li><a href="{{ url_for('admin.manage_complaints') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>Жалобы</span></a></li>
-                 <li><a href="{{ url_for('admin.manage_comments') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>Комментарии</span></a></li>
+                <li><a href="{{ url_for('admin.manage_dashboard') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>{{ tr.admin_dashboard }}</span></a></li>
+                <li><a href="{{ url_for('admin.manage_users') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>{{ tr.admin_users }}</span></a></li>
+                <li><a href="{{ url_for('admin.manage_reviews') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>{{ tr.admin_reviews }}</span></a></li>
+                <li><a href="{{ url_for('admin.manage_categories') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>{{ tr.admin_categories }}</span></a></li>
+                <li><a href="{{ url_for('admin.manage_complaints') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>{{ tr.admin_complaints }}</span></a></li>
+                <li><a href="{{ url_for('admin.manage_comments') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>{{ tr.admin_comments }}</span></a></li>
             </ul>
         </nav>
         <div class="mt-auto">
-            <a href="{{ url_for('pages.home', lang=lang) }}" class="block text-center w-full p-2 rounded-md bg-slate-700 hover:bg-slate-600 transition">Вернуться на сайт</a>
+            <a href="{{ url_for('pages.home', lang=lang) }}" class="block text-center w-full p-2 rounded-md bg-slate-700 hover:bg-slate-600 transition">{{ tr.admin_return_to_site }}</a>
         </div>
     </aside>
 
