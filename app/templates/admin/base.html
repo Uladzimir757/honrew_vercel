@@ -12,11 +12,12 @@
         <h2 class="text-2xl font-bold mb-8">Админ-панель</h2>
         <nav class="flex-grow">
             <ul class="space-y-2">
-                <li><a href="{{ url_for('admin.dashboard') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>แดชบอร์ด</span></a></li>
+                <li><a href="{{ url_for('admin.manage_dashboard') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>แดชบอร์ด</span></a></li>
                 <li><a href="{{ url_for('admin.manage_users') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>Пользователи</span></a></li>
                 <li><a href="{{ url_for('admin.manage_reviews') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>Отзывы</span></a></li>
                 <li><a href="{{ url_for('admin.manage_categories') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>Категории</span></a></li>
                 <li><a href="{{ url_for('admin.manage_complaints') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>Жалобы</span></a></li>
+                 <li><a href="{{ url_for('admin.manage_comments') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>Комментарии</span></a></li>
             </ul>
         </nav>
         <div class="mt-auto">
@@ -32,16 +33,6 @@
             </div>
         </header>
         <main class="flex-1 p-8 overflow-y-auto">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="p-4 mb-4 rounded-md {{ 'bg-green-600' if category == 'success' else 'bg-red-600' }}">
-                            <p class="text-white font-medium">{{ message }}</p>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            
             {% if flash %}
                 <div class="p-4 mb-4 rounded-md {{ 'bg-green-600' if flash.category == 'success' else 'bg-red-600' }}">
                     <p class="text-white font-medium">{{ flash.message }}</p>

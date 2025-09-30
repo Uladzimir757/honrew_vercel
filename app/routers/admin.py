@@ -16,10 +16,10 @@ def before_request():
     """Защищает все маршруты в этом блюпринте"""
     pass
 
+# ИЗМЕНЕНО: dashboard -> manage_dashboard
 @admin_bp.route("/")
-def dashboard():
+def manage_dashboard():
     total_users = g.db.fetch_one("SELECT COUNT(*) AS total FROM users")['total']
-    # ИЗМЕНЕНО: videos -> reviews
     total_reviews = g.db.fetch_one("SELECT COUNT(*) AS total FROM reviews")['total']
     total_likes = g.db.fetch_one("SELECT COUNT(*) AS total FROM likes")['total']
     pending_comments = g.db.fetch_one("SELECT COUNT(*) AS total FROM comments WHERE status = 'pending_review'")['total']
@@ -31,8 +31,9 @@ def dashboard():
     return render_template("admin/dashboard.html", stats=stats)
 
 
+# ИЗМЕНЕНО: admin_reviews_list -> manage_reviews
 @admin_bp.route("/reviews")
-def admin_reviews_list():
+def manage_reviews():
     q = request.args.get('q', '')
     status = request.args.get('status', 'all')
     page = request.args.get('page', 1, type=int)
@@ -40,7 +41,6 @@ def admin_reviews_list():
     offset = (page - 1) * settings.ITEMS_PER_PAGE
     search_term = f"%{q}%" if q else "%"
     
-    # ИЗМЕНЕНО: v -> r, videos -> reviews
     where_clauses = ["(r.what LIKE %s OR r.where LIKE %s OR u.email LIKE %s)"]
     params = [search_term, search_term, search_term]
 
@@ -67,7 +67,6 @@ def admin_reviews_list():
     )
 
 def _handle_review_status_change(review_id: int, new_status: str):
-    # ИЗМЕНЕНО: videos -> reviews
     g.db.execute("UPDATE reviews SET status = %s WHERE id = %s", (new_status, review_id))
     
     review_author_query = "SELECT r.title, u.email FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.id = %s"
@@ -78,7 +77,6 @@ def _handle_review_status_change(review_id: int, new_status: str):
         subject_key = "email_review_approved_subject" if new_status == 'published' else "email_review_rejected_subject"
         body_key = "email_review_approved_body" if new_status == 'published' else "email_review_rejected_body"
         
-        # ИЗМЕНЕНО: videos.view_video_page -> reviews.view_review_page, video_id -> review_id
         review_link = url_for('reviews.view_review_page', review_id=review_id, lang=lang, _external=True)
         send_email_notification(
             recipients=[review_author_data["email"]],
@@ -90,7 +88,7 @@ def _handle_review_status_change(review_id: int, new_status: str):
 
     message = g.tr["admin_review_approved"] if new_status == 'published' else g.tr["admin_review_rejected"]
     session["flash"] = {"category": "success", "message": message}
-    return redirect(request.headers.get("referer", url_for('admin.admin_reviews_list')))
+    return redirect(request.headers.get("referer", url_for('admin.manage_reviews')))
 
 
 @admin_bp.route("/reviews/<int:review_id>/approve", methods=['POST'])
@@ -103,8 +101,9 @@ def reject_review(review_id: int):
     return _handle_review_status_change(review_id, 'rejected')
 
 
+# ИЗМЕНЕНО: admin_users_list -> manage_users
 @admin_bp.route("/users")
-def admin_users_list():
+def manage_users():
     q = request.args.get('q', '')
     page = request.args.get('page', 1, type=int)
 
@@ -129,17 +128,16 @@ def admin_delete_user(user_id: int):
 
     if user_id == g.user["id"]:
         session["flash"] = {"category": "error", "message": g.tr.get("admin_cannot_delete_self")}
-        return redirect(url_for('admin.admin_users_list', lang=lang))
+        return redirect(url_for('admin.manage_users', lang=lang))
         
     g.db.execute("DELETE FROM users WHERE id = %s", (user_id,))
     session["flash"] = {"category": "success", "message": g.tr.get("admin_user_deleted_success")}
-    return redirect(url_for('admin.admin_users_list', lang=lang))
+    return redirect(url_for('admin.manage_users', lang=lang))
 
 
+# ИЗМЕНЕНО: admin_comments_list -> manage_comments
 @admin_bp.route("/comments")
-def admin_comments_list():
-    """Отображает список комментариев, ожидающих модерации."""
-    # ИЗМЕНЕНО: v -> r, videos -> reviews, video_id -> review_id, video_title -> review_title
+def manage_comments():
     query = """
         SELECT c.*, u.email as author_email, r.title as review_title, r.id as review_id
         FROM comments c
@@ -152,7 +150,6 @@ def admin_comments_list():
     return render_template("admin/comments.html", comments=comments)
 
 def _handle_comment_status_change(comment_id: int, new_status: str):
-    """Общая функция для одобрения/отклонения комментариев."""
     g.db.execute("UPDATE comments SET status = %s WHERE id = %s", (new_status, comment_id))
     
     if new_status == 'published':
@@ -180,7 +177,7 @@ def _handle_comment_status_change(comment_id: int, new_status: str):
             
     message = g.tr.get("admin_comment_approved") if new_status == 'published' else g.tr.get("admin_comment_rejected")
     session["flash"] = {"category": "success", "message": message}
-    return redirect(url_for('admin.admin_comments_list'))
+    return redirect(url_for('admin.manage_comments'))
 
 @admin_bp.route("/comments/<int:comment_id>/approve", methods=['POST'])
 def approve_comment(comment_id: int):
@@ -190,8 +187,9 @@ def approve_comment(comment_id: int):
 def reject_comment(comment_id: int):
     return _handle_comment_status_change(comment_id, 'rejected')
 
+# ИЗМЕНЕНО: admin_complaints_list -> manage_complaints
 @admin_bp.route("/complaints")
-def admin_complaints_list():
+def manage_complaints():
     query = """
         SELECT c.*, u.email as reporter_email, 
                r.id as review_id
@@ -212,7 +210,7 @@ def handle_complaint(complaint_id: int):
 
     if not complaint:
         session["flash"] = {"category": "error", "message": g.tr.get("complaint_not_found")}
-        return redirect(url_for('admin.admin_complaints_list'))
+        return redirect(url_for('admin.manage_complaints'))
 
     if action == 'delete_content':
         content_type = complaint['content_type']
@@ -237,10 +235,9 @@ def handle_complaint(complaint_id: int):
     else:
         session["flash"] = {"category": "error", "message": "Invalid action"}
 
-    return redirect(url_for('admin.admin_complaints_list'))
+    return redirect(url_for('admin.manage_complaints'))
 
 
-# --- НОВЫЙ БЛОК ДЛЯ УПРАВЛЕНИЯ КАТЕГОРИЯМИ ---
 @admin_bp.route('/categories', methods=['GET', 'POST'])
 def manage_categories():
     if request.method == 'POST':
