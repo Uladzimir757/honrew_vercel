@@ -261,6 +261,7 @@
     "admin_comments": "Comments",
     "admin_complaints": "Complaints",
     "review_published_success": "Your review has been successfully published!",
-    "review_moderation_pending": "Thank you! Your review has been submitted for moderation and will appear online shortly."
+    "review_moderation_pending": "Thank you! Your review has been submitted for moderation and will appear online shortly.",
+    "error_access_denied": "Access denied. You do not have administrator rights."
 
 }
