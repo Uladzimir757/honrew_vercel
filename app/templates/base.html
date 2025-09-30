@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ lang }}" class="h-full bg-slate-900">
+<html lang="{{ lang }}" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,8 +27,6 @@
             border: 1px solid rgba(51, 65, 85, 0.5);
         }
 
-        /* CSS-правило для body удалено, чтобы избежать дублирования фона */
-
         .font-montserrat { font-family: 'Montserrat', sans-serif; }
         .font-roboto { font-family: 'Roboto', sans-serif; }
         
@@ -39,7 +37,7 @@
         }
     </style>
 </head>
-<body class="h-full text-white font-roboto bg-slate-800" {% block body_attributes %}{% endblock %}>
+<body class="h-full text-white font-roboto" {% block body_attributes %}{% endblock %}>
 
     <div class="relative min-h-screen flex flex-col">
         <header class="sticky top-0 z-50 border-b border-slate-700 custom-header-footer">
