@@ -21,28 +21,28 @@ def search_results():
     location_term = f"%{location}%" if location else "%"
     
     base_query = """
-        FROM videos v JOIN users u ON v.user_id = u.id
-        WHERE v.status = 'published'
-        AND (v.what LIKE %s OR v.title LIKE %s OR v.description LIKE %s)
-        AND v."where" LIKE %s
+        FROM reviews r JOIN users u ON r.user_id = u.id
+        WHERE r.status = 'published'
+        AND (r.what LIKE %s OR r.title LIKE %s OR r.description LIKE %s)
+        AND r."where" LIKE %s
     """
     
     count_query = f"SELECT COUNT(*) AS total {base_query}"
-    params_count = (search_term, search_term, search_term, location_term)
-    total_items = g.db.fetch_one(count_query, params_count)['total']
+    params = (search_term, search_term, search_term, location_term)
+    total_items = g.db.fetch_one(count_query, params)['total']
     total_pages = math.ceil(total_items / settings.ITEMS_PER_PAGE) if total_items > 0 else 0
     
     select_query = f"""
-        SELECT v.*, u.email as author_email 
+        SELECT r.*, u.email as author_email 
         {base_query}
-        ORDER BY v.id DESC 
+        ORDER BY r.id DESC 
         LIMIT %s OFFSET %s
     """
-    params_select = (search_term, search_term, search_term, location_term, settings.ITEMS_PER_PAGE, offset)
-    result_videos = g.db.fetch_all(select_query, params_select)
+    params_select = list(params) + [settings.ITEMS_PER_PAGE, offset]
+    result_reviews = g.db.fetch_all(select_query, tuple(params_select))
     
     return render_template("search_results.html",
-        videos=result_videos,
+        reviews=result_reviews,
         query=q,
         location=location,
         current_page=page,
@@ -68,33 +68,36 @@ def record_page():
 
 @pages_bp.route("/sitemap.xml", methods=['GET'])
 def sitemap():
-    # Собираем статические страницы с метаданными
+    # Собираем статические страницы
     urls = [
         {'loc': url_for('pages.home', _external=True), 'changefreq': 'daily', 'priority': '1.0'},
-        {'loc': url_for('videos.live_page', _external=True), 'changefreq': 'daily', 'priority': '0.9'},
-        {'loc': url_for('videos.category_page', category_name='real-estate', _external=True), 'changefreq': 'weekly', 'priority': '0.8'},
-        {'loc': url_for('videos.category_page', category_name='auto', _external=True), 'changefreq': 'weekly', 'priority': '0.8'},
-        {'loc': url_for('videos.category_page', category_name='services', _external=True), 'changefreq': 'weekly', 'priority': '0.8'},
+        {'loc': url_for('reviews.live_page', _external=True), 'changefreq': 'daily', 'priority': '0.9'},
         {'loc': url_for('pages.terms_page', _external=True), 'changefreq': 'monthly', 'priority': '0.5'},
         {'loc': url_for('pages.privacy_page', _external=True), 'changefreq': 'monthly', 'priority': '0.5'},
         {'loc': url_for('pages.contact_page', _external=True), 'changefreq': 'monthly', 'priority': '0.5'},
     ]
     
-    # Получаем динамические страницы (видео) с датой обновления
-    query = "SELECT id, created_at FROM videos WHERE status = 'published' ORDER BY id DESC"
-    all_videos = g.db.fetch_all(query)
-    
-    if all_videos:
-        for video in all_videos:
-            url_info = {
-                'loc': url_for('videos.view_video_page', video_id=video["id"], _external=True),
-                'lastmod': video["created_at"].strftime('%Y-%m-%d'),
+    # Динамически добавляем все категории и подкатегории
+    categories = g.db.fetch_all("SELECT slug FROM categories")
+    if categories:
+        for cat in categories:
+            urls.append({'loc': url_for('reviews.category_page', category_slug=cat['slug'], _external=True), 'changefreq': 'weekly', 'priority': '0.8'})
+
+    subcategories = g.db.fetch_all("SELECT c.slug as cat_slug, sc.slug as sub_slug FROM subcategories sc JOIN categories c ON sc.category_id = c.id")
+    if subcategories:
+        for sub in subcategories:
+             urls.append({'loc': url_for('reviews.category_page', category_slug=sub['cat_slug'], subcategory_slug=sub['sub_slug'], _external=True), 'changefreq': 'weekly', 'priority': '0.7'})
+
+    # Динамически добавляем все отзывы
+    all_reviews = g.db.fetch_all("SELECT id, created_at FROM reviews WHERE status = 'published'")
+    if all_reviews:
+        for review in all_reviews:
+            urls.append({
+                'loc': url_for('reviews.view_review_page', review_id=review["id"], _external=True),
+                'lastmod': review["created_at"].strftime('%Y-%m-%d'),
                 'changefreq': 'yearly',
-                'priority': '0.7'
-            }
-            urls.append(url_info)
+                'priority': '0.6'
+            })
     
-    # Рендерим шаблон, передавая в него список URL
     sitemap_xml = render_template("sitemap.xml", urls=urls)
-    
     return Response(sitemap_xml, mimetype="application/xml")

@@ -6,8 +6,9 @@ from psycopg2.extras import RealDictCursor
 from flask import Flask, request, session, g
 
 from app.config import settings
-from app.routers import (auth_bp, pages_bp, videos_bp, users_bp, 
-                         complaints_bp, admin_bp)
+# ИЗМЕНЕНИЕ: импортируем новые блюпринты
+from app.routers import (auth_bp, pages_bp, reviews_bp, users_bp, 
+                         complaints_bp, admin_bp, categories_bp)
 from app.dependencies import get_current_user
 
 class PostgresManager:
@@ -59,12 +60,14 @@ def get_app():
 
     app.secret_key = settings.SECRET_KEY
 
+    # ИЗМЕНЕНИЕ: регистрируем новые и переименованные блюпринты
     app.register_blueprint(auth_bp)
     app.register_blueprint(pages_bp)
-    app.register_blueprint(videos_bp)
+    app.register_blueprint(reviews_bp) # <-- videos_bp теперь reviews_bp
     app.register_blueprint(users_bp)
     app.register_blueprint(complaints_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(categories_bp) # <-- Новый блюпринт
 
     @app.before_request
     def before_request_handler():
@@ -83,10 +86,7 @@ def get_app():
         except (FileNotFoundError, json.JSONDecodeError):
             g.tr = {}
         
-        ### НАЧАЛО ИЗМЕНЕНИЙ: Убираем g.db из вызова ###
         g.user = get_current_user()
-        ### КОНЕЦ ИЗМЕНЕНИЙ ###
-
         g.flash = session.pop('flash', None)
 
     @app.teardown_request
@@ -110,13 +110,21 @@ def get_app():
                 print(f"Error counting complaints: {e}")
                 pending_complaints_count = 0
 
+        # Получаем категории для навбара
+        categories_nav = []
+        try:
+            categories_nav = g.db.fetch_all("SELECT name, slug FROM categories ORDER BY name")
+        except Exception as e:
+            print(f"Error fetching categories for navbar: {e}")
+
         return {
             'user': user,
             'lang': g.get('lang'),
             'tr': g.get('tr'),
             'flash': g.get('flash'),
             'settings': settings,
-            'pending_complaints_count': pending_complaints_count
+            'pending_complaints_count': pending_complaints_count,
+            'categories_for_nav': categories_nav
         }
     return app
 

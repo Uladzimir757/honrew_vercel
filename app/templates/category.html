@@ -11,7 +11,7 @@
             </p>
         </div>
         {% if user %}
-            <a href="/upload?lang={{ lang }}&category={{ category_name }}"
+            <a href="{{ url_for('reviews.handle_upload', lang=lang) }}"
                 class="mt-8 inline-block bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors shadow-lg">
                 + {{ tr.add_review }}
             </a>
@@ -19,55 +19,49 @@
     </div>
 
     <div class="max-w-7xl mx-auto">
-        {% if videos %}
+        {% if reviews %}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {% for video in videos %}
+            {% for review in reviews %}
             <div
                 class="bg-glass rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden">
-                <a href="/video/{{ video.id }}?lang={{ lang }}" class="group block relative">
-                    {% if video.media_type == 'image' %}
-                    <img src="{{ settings.R2_PUBLIC_URL }}/{{ settings.S3_BUCKET_NAME }}/{{ video.filename }}" alt="{{ video.title }}" class="w-full h-48 object-cover" loading="lazy">
+                <a href="{{ url_for('reviews.view_review_page', review_id=review.id, lang=lang) }}" class="group block relative">
+                    {% if review.filename %}
+                        {% if review.media_type == 'image' %}
+                        <img src="{{ settings.R2_PUBLIC_URL }}/{{ settings.S3_BUCKET_NAME }}/{{ review.filename }}" alt="{{ review.title }}" class="w-full h-48 object-cover" loading="lazy">
+                        {% else %}
+                        <video class="w-full h-48 object-cover bg-black" loading="lazy" muted playsinline>
+                            <source src="{{ settings.R2_PUBLIC_URL }}/{{ settings.S3_BUCKET_NAME }}/{{ review.filename }}" type="video/mp4">
+                        </video>
+                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <svg class="h-12 w-12 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+                        </div>
+                        {% endif %}
                     {% else %}
-                    <video class="w-full h-48 object-cover bg-black" {% if video.preview_filename %}poster="{{ settings.R2_PUBLIC_URL }}/{{ settings.S3_BUCKET_NAME }}/{{ video.preview_filename }}"{% endif %} loading="lazy" muted playsinline>
-                        <source src="{{ settings.R2_PUBLIC_URL }}/{{ settings.S3_BUCKET_NAME }}/{{ video.filename }}" type="video/mp4">
-                    </video>
-                    <div
-                        class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg class="h-12 w-12 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-                                clip-rule="evenodd" />
-                        </svg>
-                    </div>
+                        <div class="w-full h-48 bg-slate-800 flex items-center justify-center">
+                            <span class="text-slate-500">{{ tr.no_media }}</span>
+                        </div>
                     {% endif %}
                 </a>
                 <div class="p-5 flex-grow flex flex-col">
-                    <h4 class="text-lg font-bold text-white truncate">{{ video.what }}</h4>
-                    <p class="text-sm text-gray-400 mt-1 truncate">{{ video.where }}</p>
-                    <p class="text-md text-gray-200 mt-2 h-12 overflow-hidden flex-grow">{{ video.title }}</p>
-                    
+                    <h4 class="text-lg font-bold text-white truncate">{{ review.what }}</h4>
+                    <p class="text-sm text-gray-400 mt-1 truncate">{{ review.where }}</p>
+                    <p class="text-md text-gray-200 mt-2 h-12 overflow-hidden flex-grow">{{ review.title }}</p>
                     <div class="mt-2 flex items-center">
                         {% for i in range(1, 6) %}
-                            <svg class="w-5 h-5 {% if i <= video.rating %}text-yellow-400{% else %}text-gray-600{% endif %}" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.955a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.368 2.448a1 1 0 00-.364 1.118l1.287 3.955c.3.921-.755 1.688-1.54 1.118l-3.368-2.448a1 1 0 00-1.176 0l-3.368 2.448c-.784.57-1.838-.197-1.54-1.118l1.287-3.955a1 1 0 00-.364-1.118L2.35 9.382c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69L9.049 2.927z" />
-                            </svg>
+                            <svg class="w-5 h-5 {% if i <= review.rating %}text-yellow-400{% else %}text-gray-600{% endif %}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.955a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.368 2.448a1 1 0 00-.364 1.118l1.287 3.955c.3.921-.755 1.688-1.54 1.118l-3.368-2.448a1 1 0 00-1.176 0l-3.368 2.448c-.784.57-1.838-.197-1.54-1.118l1.287-3.955a1 1 0 00-.364-1.118L2.35 9.382c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69L9.049 2.927z" /></svg>
                         {% endfor %}
                     </div>
-                    
-                    <p class="text-xs text-gray-500 mt-2 flex-grow">{{ tr.video_by }} {{ video.author_email }}</p>
+                    <p class="text-xs text-gray-500 mt-2 flex-grow">{{ tr.video_by }} {{ review.author_email }}</p>
                 </div>
             </div>
             {% endfor %}
         </div>
-        
         {% include 'partials/pagination.html' %}
-        
         {% else %}
         <div class="bg-glass rounded-2xl text-center p-8">
             <p class="text-lg text-white mb-6">{{ tr.no_reviews_in_category }}</p>
-            <a href="/upload?lang={{ lang }}&category={{ category_name }}"
-                class="inline-block bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors shadow-lg">
-                {{ tr.upload_button }}
+            <a href="{{ url_for('reviews.handle_upload', lang=lang) }}" class="inline-block bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors shadow-lg">
+                {{ tr.add_review }}
             </a>
         </div>
         {% endif %}

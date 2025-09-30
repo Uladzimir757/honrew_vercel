@@ -1,11 +1,15 @@
--- Схема базы данных для PostgreSQL (Продакшн)
+-- Удаляем таблицы с CASCADE, чтобы разорвать все зависимости
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS categories CASCADE;
+DROP TABLE IF EXISTS subcategories CASCADE;
+DROP TABLE IF EXISTS reviews CASCADE;
+DROP TABLE IF EXISTS media_files CASCADE;
+DROP TABLE IF EXISTS likes CASCADE;
+DROP TABLE IF EXISTS comments CASCADE;
+DROP TABLE IF EXISTS complaints CASCADE;
+DROP TABLE IF EXISTS company_replies CASCADE;
 
-DROP TABLE IF EXISTS company_replies;
-DROP TABLE IF EXISTS complaints;
-DROP TABLE IF EXISTS comments;
-DROP TABLE IF EXISTS likes;
-DROP TABLE IF EXISTS videos;
-DROP TABLE IF EXISTS users;
+-- Создаем таблицы заново с новой структурой
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -24,33 +28,52 @@ CREATE TABLE users (
     user_type TEXT DEFAULT 'client' NOT NULL
 );
 
-CREATE TABLE videos (
+CREATE TABLE categories (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    slug TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE subcategories (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+    UNIQUE(slug, category_id) -- Slug должен быть уникальным в пределах родительской категории
+);
+
+CREATE TABLE reviews (
     id SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
     description TEXT,
-    category TEXT NOT NULL,
-    filename TEXT NOT NULL,
-    preview_filename TEXT,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    subcategory_id INTEGER REFERENCES subcategories(id) ON DELETE SET NULL,
     what TEXT,
-    "where" TEXT, -- "where" - ключевое слово, поэтому в кавычках
-    media_type TEXT DEFAULT 'video',
+    "where" TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     rating INTEGER,
     status TEXT DEFAULT 'pending_review' NOT NULL
 );
 
+CREATE TABLE media_files (
+    id SERIAL PRIMARY KEY,
+    review_id INTEGER NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
+    filename TEXT NOT NULL,
+    media_type TEXT NOT NULL,
+    is_preview BOOLEAN DEFAULT FALSE NOT NULL
+);
+
 CREATE TABLE likes (
-    video_id INTEGER NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
+    review_id INTEGER NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    PRIMARY KEY (video_id, user_id)
+    PRIMARY KEY (review_id, user_id)
 );
 
 CREATE TABLE comments (
     id SERIAL PRIMARY KEY,
     content TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    video_id INTEGER NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
+    review_id INTEGER NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     status TEXT DEFAULT 'pending_review' NOT NULL
 );
@@ -68,7 +91,7 @@ CREATE TABLE complaints (
 CREATE TABLE company_replies (
     id SERIAL PRIMARY KEY,
     content TEXT NOT NULL,
-    video_id INTEGER NOT NULL UNIQUE REFERENCES videos(id) ON DELETE CASCADE,
+    review_id INTEGER NOT NULL UNIQUE REFERENCES reviews(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
