@@ -1,0 +1,68 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Управление категориями{% endblock %}
+{% block header %}Управление категориями{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+    <div class="lg:col-span-1 bg-slate-800 rounded-lg shadow p-6 h-fit">
+        <h3 class="text-xl font-semibold mb-4">Добавить новую</h3>
+        <form action="{{ url_for('admin.manage_categories') }}" method="POST" class="space-y-4">
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-300">Название</label>
+                <input type="text" name="name" id="name" required class="mt-1 block w-full bg-slate-700 border-slate-600 rounded-md shadow-sm text-white focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label for="slug" class="block text-sm font-medium text-gray-300">Слаг (slug)</label>
+                <input type="text" name="slug" id="slug" required placeholder="naprimer-tak" class="mt-1 block w-full bg-slate-700 border-slate-600 rounded-md shadow-sm text-white focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label for="parent_id" class="block text-sm font-medium text-gray-300">Родительская категория</label>
+                <select name="parent_id" id="parent_id" class="mt-1 block w-full bg-slate-700 border-slate-600 rounded-md shadow-sm text-white focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">-- Основная категория (нет родителя) --</option>
+                    {% for cat in main_categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                Добавить
+            </button>
+        </form>
+    </div>
+
+    <div class="lg:col-span-2 bg-slate-800 rounded-lg shadow p-6">
+        <h3 class="text-xl font-semibold mb-4">Существующие категории</h3>
+        <div class="space-y-4">
+            {% for category_item in categories_tree %}
+            <div class="bg-slate-700/50 p-4 rounded-md">
+                <div class="flex justify-between items-center">
+                    <h4 class="text-lg font-bold">{{ category_item.data.name }}</h4>
+                    <div class="text-sm space-x-2">
+                        <a href="#" class="text-blue-400 hover:text-blue-300">Редактировать</a>
+                        <a href="#" class="text-red-400 hover:text-red-300">Удалить</a>
+                    </div>
+                </div>
+
+                {% if category_item.subcategories %}
+                <ul class="mt-3 ml-6 space-y-2 list-disc list-inside text-slate-300">
+                    {% for subcat in category_item.subcategories %}
+                    <li class="flex justify-between items-center">
+                        <span>{{ subcat.name }}</span>
+                         <div class="text-xs space-x-2">
+                            <a href="#" class="text-blue-400 hover:text-blue-300">Редактировать</a>
+                            <a href="#" class="text-red-400 hover:text-red-300">Удалить</a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+            {% else %}
+            <p class="text-slate-400">Категорий пока нет. Добавьте первую с помощью формы.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
