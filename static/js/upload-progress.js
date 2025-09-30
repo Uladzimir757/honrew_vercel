@@ -8,37 +8,48 @@ document.addEventListener('DOMContentLoaded', function () {
     const progressText = document.getElementById('progress-text');
     const errorMessage = document.getElementById('error-message');
 
-    let selectedFiles = [];
+    let selectedFiles = []; // Массив, где мы будем накапливать файлы
 
     fileInput.addEventListener('change', () => {
-        selectedFiles = Array.from(fileInput.files);
-        updateFileList();
+        // --- ГЛАВНОЕ ИЗМЕНЕНИЕ: НЕ ЗАМЕНЯЕМ, А ДОБАВЛЯЕМ ФАЙЛЫ ---
+        const newFiles = Array.from(fileInput.files);
+        newFiles.forEach(newFile => {
+            // Проверяем, что такого файла еще нет в списке (по имени и размеру)
+            if (!selectedFiles.some(f => f.name === newFile.name && f.size === newFile.size)) {
+                selectedFiles.push(newFile);
+            }
+        });
+        // ----------------------------------------------------
+        updateFileListAndInput();
     });
 
-    function updateFileList() {
+    function updateFileListAndInput() {
         fileListContainer.innerHTML = '';
+        const dataTransfer = new DataTransfer(); // Создаем объект для управления списком файлов
+
         selectedFiles.forEach((file, index) => {
+            // Добавляем файл в DataTransfer
+            dataTransfer.items.add(file);
+
+            // Отображаем файл на странице
             const fileElement = document.createElement('div');
             fileElement.className = 'flex items-center justify-between bg-slate-700/50 p-2 rounded';
             fileElement.innerHTML = `
                 <span class="text-sm text-gray-300 truncate">${file.name}</span>
-                <button type="button" data-index="${index}" class="remove-file-btn text-red-400 hover:text-red-600">&times;</button>
+                <button type="button" data-index="${index}" class="remove-file-btn text-red-400 hover:text-red-600 text-xl font-bold">&times;</button>
             `;
             fileListContainer.appendChild(fileElement);
         });
+
+        // Синхронизируем наш массив с самим <input>
+        fileInput.files = dataTransfer.files;
     }
 
     fileListContainer.addEventListener('click', (e) => {
         if (e.target.classList.contains('remove-file-btn')) {
             const indexToRemove = parseInt(e.target.dataset.index, 10);
-            selectedFiles.splice(indexToRemove, 1);
-            
-            // Create a new FileList and assign it back to the input
-            const dataTransfer = new DataTransfer();
-            selectedFiles.forEach(file => dataTransfer.items.add(file));
-            fileInput.files = dataTransfer.files;
-
-            updateFileList();
+            selectedFiles.splice(indexToRemove, 1); // Удаляем из нашего массива
+            updateFileListAndInput(); // Обновляем и список на странице, и <input>
         }
     });
 
@@ -55,6 +66,7 @@ document.addEventListener('DOMContentLoaded', function () {
         progressContainer.classList.remove('hidden');
         progressText.textContent = '';
         hideError();
+        completedUploads = 0; // Сбрасываем счетчик перед новой загрузкой
 
         const uploadPromises = selectedFiles.map(file => {
             if (file.size > 50 * 1024 * 1024) { // 50 MB
@@ -76,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 description: formData.get('description'),
                 category: formData.get('category'),
                 rating: formData.get('rating'),
-                objectNames: objectNames, // Отправляем массив имен
+                objectNames: objectNames,
             };
 
             const response = await fetch('/upload', {
@@ -100,7 +112,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     async function uploadFile(file) {
-        // Получаем presigned URL
         const presignedUrlResponse = await fetch('/api/generate-upload-url', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -111,7 +122,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         const { url, objectName } = await presignedUrlResponse.json();
 
-        // Загружаем файл в R2
         const uploadResponse = await fetch(url, {
             method: 'PUT',
             body: file,
@@ -121,7 +131,6 @@ document.addEventListener('DOMContentLoaded', function () {
             throw new Error(`Failed to upload ${file.name}.`);
         }
         
-        // Обновляем общий прогресс (упрощенно)
         updateOverallProgress(selectedFiles.length);
 
         return {
