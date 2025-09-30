@@ -18,3 +18,19 @@ UPDATE users SET is_admin = TRUE WHERE email = 'vovan757vovan@gmail.com';
 SQL
 
 UPDATE users SET is_verified = TRUE WHERE email = 'vovan757vovan@gmail.com';
+
+
+Чтобы добавить новую основную категорию, например "Спорт":
+
+SQL
+
+INSERT INTO categories (name, slug) VALUES ('Спорт', 'sport');
+2. Добавление новой подкатегории
+Сначала посмотрите, какой id у категории "Спорт" (допустим, 5), а затем добавьте подкатегорию:
+
+SQL
+
+INSERT INTO subcategories (name, slug, category_id) VALUES ('Фитнес-клубы', 'fitness-clubs', 5);
+3. Редактирование и удаление
+Вы также можете использовать команды UPDATE для изменения названия или DELETE для удаления, но будьте осторожны, чтобы не нарушить связи.
+

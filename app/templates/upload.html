@@ -1,31 +1,62 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="max-w-2xl mx-auto bg-glass rounded-2xl shadow-lg p-8">
-        <h1 class="text-3xl font-bold text-white mb-6 text-center">{{ tr.upload_page_title }}</h1>
+<style>
+    .rating { display: inline-block; }
+    .rating input { display: none; }
+    .rating label {
+        float: right;
+        cursor: pointer;
+        color: #6e7d97; /* Цвет пустой звезды */
+        transition: color 0.2s;
+    }
+    .rating label:before {
+        content: '★';
+        font-size: 2rem;
+    }
+    .rating input:checked ~ label,
+    .rating label:hover,
+    .rating label:hover ~ label {
+        color: #FBBF24; /* Цвет заполненной/активной звезды */
+    }
+</style>
 
-        <form id="upload-form">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="max-w-3xl mx-auto bg-glass rounded-2xl shadow-lg p-8">
+        <h2 class="text-3xl font-bold text-white text-center mb-8">{{ tr.upload_page_title }}</h2>
+        
+        <div class="text-center mb-8">
+            <p class="text-slate-300">{{ tr.record_video_prompt }}</p>
+            <a href="/record?lang={{ lang }}" class="inline-block mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition">
+                {{ tr.go_to_record_button }}
+            </a>
+        </div>
+        <hr class="border-slate-700 my-8">
+
+        <form id="upload-form" class="space-y-6">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label for="what" class="block text-sm font-medium text-gray-300">{{ tr.form_what }}</label>
+                    <label for="what" class="block text-sm font-medium text-gray-300">{{ tr.upload_what_label }}</label>
                     <input type="text" name="what" id="what" required class="mt-1 block w-full bg-slate-700/50 border-slate-600 rounded-md shadow-sm text-white focus:ring-blue-500 focus:border-blue-500">
                 </div>
                 <div>
-                    <label for="where" class="block text-sm font-medium text-gray-300">{{ tr.form_where }}</label>
+                    <label for="where" class="block text-sm font-medium text-gray-300">{{ tr.upload_where_label }}</label>
                     <input type="text" name="where" id="where" required class="mt-1 block w-full bg-slate-700/50 border-slate-600 rounded-md shadow-sm text-white focus:ring-blue-500 focus:border-blue-500">
                 </div>
             </div>
-            <div class="mb-6">
-                <label for="title" class="block text-sm font-medium text-gray-300">{{ tr.form_title }}</label>
+            
+            <div>
+                <label for="title" class="block text-sm font-medium text-gray-300">{{ tr.upload_title_label }}</label>
                 <input type="text" name="title" id="title" required class="mt-1 block w-full bg-slate-700/50 border-slate-600 rounded-md shadow-sm text-white focus:ring-blue-500 focus:border-blue-500">
             </div>
-            <div class="mb-6">
-                <label for="description" class="block text-sm font-medium text-gray-300">{{ tr.form_description }}</label>
-                <textarea name="description" id="description" rows="4" required class="mt-1 block w-full bg-slate-700/50 border-slate-600 rounded-md shadow-sm text-white focus:ring-blue-500 focus:border-blue-500"></textarea>
+
+            <div>
+                <label for="description" class="block text-sm font-medium text-gray-300">{{ tr.upload_description_label }}</label>
+                <textarea id="description" name="description" rows="4" required class="mt-1 block w-full bg-slate-700/50 border-slate-600 rounded-md shadow-sm text-white focus:ring-blue-500 focus:border-blue-500"></textarea>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label for="category" class="block text-sm font-medium text-gray-300">{{ tr.form_category }}</label>
                     <select name="category" id="category" required 
@@ -44,39 +75,44 @@
                     </select>
                 </div>
             </div>
-
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-300">{{ tr.form_rating }}</label>
-                <select name="rating" id="rating" required class="mt-1 block w-full bg-slate-700/50 border-slate-600 rounded-md shadow-sm text-white focus:ring-blue-500 focus:border-blue-500">
-                    <option value="5">★★★★★</option>
-                    <option value="4">★★★★☆</option>
-                    <option value="3">★★★☆☆</option>
-                    <option value="2">★★☆☆☆</option>
-                    <option value="1">★☆☆☆☆</option>
-                </select>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">{{ tr.upload_rating_label }}</label>
+                <div class="rating">
+                    <input type="radio" id="star5" name="rating" value="5" required><label for="star5" title="5 stars"></label>
+                    <input type="radio" id="star4" name="rating" value="4"><label for="star4" title="4 stars"></label>
+                    <input type="radio" id="star3" name="rating" value="3"><label for="star3" title="3 stars"></label>
+                    <input type="radio" id="star2" name="rating" value="2"><label for="star2" title="2 stars"></label>
+                    <input type="radio" id="star1" name="rating" value="1"><label for="star1" title="1 star"></label>
+                </div>
             </div>
 
-            <div class="mb-6">
+            <div>
                 <label for="file-input" class="block text-sm font-medium text-gray-300">{{ tr.form_select_files }} ({{ tr.max_size }} 50MB)</label>
-                <input type="file" name="files" id="file-input" multiple accept="video/*,image/*" required class="mt-1 block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+                <input type="file" name="files" id="file-input" multiple required accept="video/*,image/*"
+                    class="mt-1 block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
             </div>
 
-            <div id="file-list" class="mb-6 space-y-2"></div>
-            <div id="progress-container" class="w-full bg-slate-700 rounded-full h-2.5 mb-4 hidden">
+            <div id="file-list" class="space-y-2"></div>
+
+            <div id="progress-container" class="w-full bg-slate-700 rounded-full h-2.5 my-4 hidden">
                 <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
             </div>
             <div id="progress-text" class="text-center text-sm text-gray-400 mb-4"></div>
-            <div id="error-message" class="hidden bg-red-900/50 text-red-300 p-3 rounded-md mb-6 text-center"></div>
+            <div id="error-message" class="hidden bg-red-900/50 text-red-300 p-3 rounded-md mb-4 text-center"></div>
 
-            <button type="submit" id="submit-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors shadow-lg disabled:bg-slate-500">
-                {{ tr.upload_button }}
-            </button>
+            <div class="pt-4">
+                <button type="submit" id="submit-button"
+                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800 disabled:bg-slate-500">
+                    {{ tr.upload_button }}
+                </button>
+            </div>
         </form>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/upload-progress.js') }}"></script>
-<script src="{{ url_for('static', filename='js/category-selector.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/upload-progress.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/category-selector.js') }}"></script>
 {% endblock %}

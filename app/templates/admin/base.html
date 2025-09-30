@@ -1,27 +1,56 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="{{ lang }}" class="h-full bg-slate-900 text-white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Админ-панель{% endblock %} - HonestReviews</title>
+    <link href="{{ url_for('static', filename='css/output.css') }}" rel="stylesheet">
+</head>
+<body class="h-full flex">
 
-{% block content %}
-<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <h1 class="text-3xl font-bold text-white mb-8">{{ tr.nav_admin }}</h1>
-    
-    <div class="flex flex-col md:flex-row gap-8">
-        <aside class="md:w-1/4">
-            <nav class="space-y-1 bg-glass rounded-lg p-4">
-                <a href="{{ url_for('admin.admin_dashboard') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'admin.admin_dashboard' %}bg-blue-600 text-white{% else %}text-gray-300 hover:bg-slate-700 hover:text-white{% endif %}">{{ tr.admin_dashboard }}</a>
-                <a href="{{ url_for('admin.admin_users_list') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'admin.admin_users_list' %}bg-blue-600 text-white{% else %}text-gray-300 hover:bg-slate-700 hover:text-white{% endif %}">{{ tr.admin_users }}</a>
-                <a href="{{ url_for('admin.admin_reviews_list') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'admin.admin_reviews_list' %}bg-blue-600 text-white{% else %}text-gray-300 hover:bg-slate-700 hover:text-white{% endif %}">{{ tr.admin_reviews }}</a>
-                <a href="{{ url_for('admin.admin_comments_list') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'admin.admin_comments_list' %}bg-blue-600 text-white{% else %}text-gray-300 hover:bg-slate-700 hover:text-white{% endif %}">{{ tr.admin_comments }}</a>
-                <a href="{{ url_for('admin.admin_complaints_list') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'admin.admin_complaints_list' %}bg-blue-600 text-white{% else %}text-gray-300 hover:bg-slate-700 hover:text-white{% endif %}">{{ tr.admin_complaints }}</a>
-            </nav>
-        </aside>
-        
-        <main class="flex-1">
-            <div class="bg-glass rounded-lg shadow p-6 min-h-full">
-                {# Сюда будет подставляться содержимое конкретных страниц админки #}
-                {% block admin_content %}{% endblock %}
+    <aside class="w-64 bg-slate-800 p-6 flex flex-col">
+        <h2 class="text-2xl font-bold mb-8">Админ-панель</h2>
+        <nav class="flex-grow">
+            <ul class="space-y-2">
+                <li><a href="{{ url_for('admin.dashboard') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>แดชบอร์ด</span></a></li>
+                <li><a href="{{ url_for('admin.manage_users') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>Пользователи</span></a></li>
+                <li><a href="{{ url_for('admin.manage_reviews') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>Отзывы</span></a></li>
+                <li><a href="{{ url_for('admin.manage_categories') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>Категории</span></a></li>
+                <li><a href="{{ url_for('admin.manage_complaints') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700 transition"><span>Жалобы</span></a></li>
+            </ul>
+        </nav>
+        <div class="mt-auto">
+            <a href="{{ url_for('pages.home', lang=lang) }}" class="block text-center w-full p-2 rounded-md bg-slate-700 hover:bg-slate-600 transition">Вернуться на сайт</a>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col">
+        <header class="bg-slate-800 shadow-md p-4 flex justify-between items-center">
+            <h1 class="text-xl font-semibold">{% block header %}{% endblock %}</h1>
+            <div>
+                <span>{{ user.email }}</span>
             </div>
+        </header>
+        <main class="flex-1 p-8 overflow-y-auto">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="p-4 mb-4 rounded-md {{ 'bg-green-600' if category == 'success' else 'bg-red-600' }}">
+                            <p class="text-white font-medium">{{ message }}</p>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            {% if flash %}
+                <div class="p-4 mb-4 rounded-md {{ 'bg-green-600' if flash.category == 'success' else 'bg-red-600' }}">
+                    <p class="text-white font-medium">{{ flash.message }}</p>
+                </div>
+            {% endif %}
+
+            {% block content %}{% endblock %}
         </main>
     </div>
-</div>
-{% endblock %}
 
+</body>
+</html>
