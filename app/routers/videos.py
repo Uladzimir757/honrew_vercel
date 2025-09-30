@@ -5,12 +5,10 @@ import math
 import logging
 import boto3
 from botocore.exceptions import ClientError
-from datetime import datetime, timezone
 from flask import (Blueprint, request, session, g, render_template,
                    redirect, url_for, jsonify, abort)
 
 from app.config import settings
-# 1. ИМПОРТИРУЕМ ФУНКЦИЮ МОДЕРАЦИИ
 from app.moderation import check_text_for_stop_words
 from app.utils import send_email_notification
 from app.decorators import login_required
@@ -130,18 +128,15 @@ def api_handle_comment(video_id: int):
     if not content or not content.strip():
         return jsonify({"error": "Comment cannot be empty"}), 400
     
-    # Модерация комментариев также важна
     if check_text_for_stop_words(content, lang):
         status = 'pending_review'
         message = g.tr["review_moderation_pending"]
     else:
         status = 'published'
-        message = g.tr["review_published_success"] # Нужно будет добавить такой перевод
+        message = g.tr.get("comment_published_success", "Comment posted successfully")
     
     insert_query = "INSERT INTO comments (content, video_id, user_id, status) VALUES (%s, %s, %s, %s)"
     g.db.execute(insert_query, (content.strip(), video_id, g.user["id"], status))
-            
-    # Здесь можно добавить логику уведомления автора видео о новом комментарии
             
     return jsonify({"status": "success", "message": message})
 
@@ -197,7 +192,6 @@ def handle_upload():
         category_name = request.args.get('category')
         return render_template("upload.html", selected_category=category_name)
 
-    # --- НАЧАЛО ИЗМЕНЕНИЙ ---
     if request.method == 'POST':
         data = request.get_json()
         if not data:
@@ -209,42 +203,42 @@ def handle_upload():
         description = data.get('description')
         category = data.get('category')
         rating = data.get('rating')
-        object_name = data.get('objectName') 
-        media_type = data.get('mediaType', 'video')
+        uploaded_files = data.get('objectNames') 
 
-        if not all([what, where, title, description, category, rating, object_name]):
+        if not all([what, where, title, description, category, rating, uploaded_files]):
             return jsonify({"status": "error", "message": "Missing required fields"}), 400
+        
+        if not isinstance(uploaded_files, list) or not uploaded_files:
+            return jsonify({"status": "error", "message": "objectNames must be a non-empty list"}), 400
 
-        # 2. ПРОВЕРЯЕМ ТЕКСТ ЧЕРЕЗ МОДЕРАТОР
         text_to_check = f"{title} {what} {where} {description}"
         is_safe = not check_text_for_stop_words(text_to_check, g.lang)
-
-        # 3. ОПРЕДЕЛЯЕМ СТАТУС И СООБЩЕНИЕ
-        if is_safe:
-            status = 'published'
-            flash_message = g.tr.get("review_published_success")
-            flash_category = "success"
-        else:
-            status = 'pending_review'
-            flash_message = g.tr.get("review_moderation_pending")
-            flash_category = "info"
-
+        status = 'published' if is_safe else 'pending_review'
+        
         try:
-            # 4. ВСТАВЛЯЕМ В ЗАПРОС ДИНАМИЧЕСКИЙ СТАТУС
-            query = """
-                INSERT INTO videos (title, description, category, filename, user_id, what, "where", media_type, rating, status)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """
-            params = (title, description, category, object_name, g.user["id"], what, where, media_type, rating, status)
-            g.db.execute(query, params)
+            for file_info in uploaded_files:
+                object_name = file_info.get('objectName')
+                media_type = file_info.get('mediaType', 'video')
+                if not object_name:
+                    continue
+
+                query = """
+                    INSERT INTO videos (title, description, category, filename, user_id, what, "where", media_type, rating, status)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """
+                params = (title, description, category, object_name, g.user["id"], what, where, media_type, rating, status)
+                g.db.execute(query, params)
             
-            session["flash"] = {"category": flash_category, "message": flash_message}
+            if is_safe:
+                session["flash"] = {"category": "success", "message": g.tr.get("review_published_success")}
+            else:
+                session["flash"] = {"category": "info", "message": g.tr.get("review_moderation_pending")}
+
             return jsonify({"status": "success", "redirectUrl": url_for('pages.home', lang=g.lang)})
 
         except Exception as e:
-            logging.error(f"Database error during upload: {e}")
+            logging.error(f"Database error during multi-upload: {e}")
             return jsonify({"status": "error", "message": "Failed to save review details."}), 500
-    # --- КОНЕЦ ИЗМЕНЕНИЙ ---
 
 @videos_bp.route("/api/generate-upload-url", methods=["POST"])
 @login_required
@@ -320,8 +314,6 @@ def delete_video(video_id: int):
         abort(403)
 
     try:
-        # --- НАЧАЛО ИЗМЕНЕНИЙ ---
-        # Инициализируем S3 клиент для работы с R2
         s3_client = boto3.client(
             's3',
             endpoint_url=settings.S3_ENDPOINT_URL,
@@ -330,22 +322,16 @@ def delete_video(video_id: int):
             region_name="auto"
         )
 
-        # Удаляем основной медиафайл (видео или фото)
         if video_data.get("filename"):
             s3_client.delete_object(Bucket=settings.S3_BUCKET_NAME, Key=video_data["filename"])
             logging.info(f"Successfully deleted {video_data['filename']} from R2.")
 
-        # Удаляем превью, если оно есть
         if video_data.get("preview_filename"):
             s3_client.delete_object(Bucket=settings.S3_BUCKET_NAME, Key=video_data["preview_filename"])
             logging.info(f"Successfully deleted {video_data['preview_filename']} from R2.")
-        # --- КОНЕЦ ИЗМЕНЕНИЙ ---
     except Exception as e:
-        # Даже если удаление файла не удалось, мы всё равно удаляем запись из БД,
-        # но логируем ошибку, чтобы можно было разобраться с "файлами-сиротами" позже.
         logging.error(f"Ошибка удаления файла из R2: {e}, filename: {video_data.get('filename')}")
     
-    # Удаляем запись из базы данных
     g.db.execute("DELETE FROM videos WHERE id = %s", (video_id,))
     session["flash"] = {"category": "success", "message": g.tr["video_deleted_success"]}
 

@@ -1,132 +1,158 @@
-// File: static/js/upload-progress.js
+document.addEventListener('DOMContentLoaded', function () {
+    const uploadForm = document.getElementById('upload-form');
+    const fileInput = document.getElementById('file-input');
+    const fileListContainer = document.getElementById('file-list');
+    const submitButton = document.getElementById('submit-button');
+    const progressContainer = document.getElementById('progress-container');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const errorMessage = document.getElementById('error-message');
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Находим все формы с классом 'upload-form' на странице
-    const uploadForms = document.querySelectorAll('.upload-form');
-    const uploadOverlay = document.getElementById('upload-overlay');
+    let selectedFiles = [];
 
-    uploadForms.forEach(form => {
-        form.addEventListener('submit', async (event) => {
-            // 1. Предотвращаем стандартную отправку формы
-            event.preventDefault();
+    fileInput.addEventListener('change', () => {
+        selectedFiles = Array.from(fileInput.files);
+        updateFileList();
+    });
+
+    function updateFileList() {
+        fileListContainer.innerHTML = '';
+        selectedFiles.forEach((file, index) => {
+            const fileElement = document.createElement('div');
+            fileElement.className = 'flex items-center justify-between bg-slate-700/50 p-2 rounded';
+            fileElement.innerHTML = `
+                <span class="text-sm text-gray-300 truncate">${file.name}</span>
+                <button type="button" data-index="${index}" class="remove-file-btn text-red-400 hover:text-red-600">&times;</button>
+            `;
+            fileListContainer.appendChild(fileElement);
+        });
+    }
+
+    fileListContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-file-btn')) {
+            const indexToRemove = parseInt(e.target.dataset.index, 10);
+            selectedFiles.splice(indexToRemove, 1);
             
-            if (uploadOverlay) {
-                uploadOverlay.style.display = 'flex';
+            // Create a new FileList and assign it back to the input
+            const dataTransfer = new DataTransfer();
+            selectedFiles.forEach(file => dataTransfer.items.add(file));
+            fileInput.files = dataTransfer.files;
+
+            updateFileList();
+        }
+    });
+
+    uploadForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        
+        if (selectedFiles.length === 0) {
+            showError('Please select at least one file.');
+            return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Uploading...';
+        progressContainer.classList.remove('hidden');
+        progressText.textContent = '';
+        hideError();
+
+        const uploadPromises = selectedFiles.map(file => {
+            if (file.size > 50 * 1024 * 1024) { // 50 MB
+                return Promise.reject(`File ${file.name} is too large.`);
             }
+            return uploadFile(file);
+        });
 
-            // 2. Получаем файл из инпута или записанное видео
-            // Этот код будет работать и для <input type="file"> и для записанного видео,
-            // если в recorder.js вы создаете File объект.
-            const mediaFileInput = form.querySelector('input[type="file"][name="media_file"]');
-            let file;
+        try {
+            const objectNames = await Promise.all(uploadPromises);
 
-            if (mediaFileInput && mediaFileInput.files.length > 0) {
-                file = mediaFileInput.files[0];
-            } else {
-                // Если это форма после записи видео, файл может быть прикреплен динамически
-                // Убедитесь, что в recorder.js вы добавляете файл в dataTransfer
-                const dataTransfer = new DataTransfer();
-                if (window.recordedBlob) {
-                    const recordedFile = new File([window.recordedBlob], "recorded_video.webm", { type: window.recordedBlob.type });
-                    dataTransfer.items.add(recordedFile);
-                    file = dataTransfer.files[0];
-                }
-            }
+            progressText.textContent = "Finalizing...";
 
-            if (!file) {
-                alert('No file selected or recorded.');
-                if (uploadOverlay) uploadOverlay.style.display = 'none';
-                return;
-            }
-
-            // 3. Запрашиваем у нашего бэкенда подписанную ссылку (presigned URL)
-            let presignedData;
-            try {
-                const response = await fetch('/api/generate-upload-url', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        filename: file.name,
-                        contentType: file.type,
-                    }),
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to get presigned URL from server.');
-                }
-                presignedData = await response.json();
-
-            } catch (error) {
-                console.error('Error getting presigned URL:', error);
-                alert('Error preparing upload. Please try again.');
-                if (uploadOverlay) uploadOverlay.style.display = 'none';
-                return;
-            }
-
-            // 4. Загружаем файл НАПРЯМУЮ в R2 по полученной ссылке
-            try {
-                const uploadResponse = await fetch(presignedData.url, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': file.type,
-                    },
-                    body: file,
-                });
-
-                if (!uploadResponse.ok) {
-                    throw new Error('Direct upload to R2 failed.');
-                }
-
-            } catch (error) {
-                console.error('Error uploading file to R2:', error);
-                alert('Error uploading file. Please try again.');
-                if (uploadOverlay) uploadOverlay.style.display = 'none';
-                return;
-            }
-
-            // 5. Собираем остальные данные из формы
-            const formData = new FormData(form);
-            const metadata = {
+            const formData = new FormData(uploadForm);
+            const reviewData = {
                 what: formData.get('what'),
                 where: formData.get('where'),
                 title: formData.get('title'),
                 description: formData.get('description'),
                 category: formData.get('category'),
                 rating: formData.get('rating'),
-                objectName: presignedData.objectName, // <-- Имя файла из ответа сервера
-                mediaType: file.type.startsWith('image/') ? 'image' : 'video'
+                objectNames: objectNames, // Отправляем массив имен
             };
 
-            // 6. Отправляем метаданные на наш основной эндпоинт /upload
-            try {
-                const finalResponse = await fetch(form.action, { // form.action это /upload?lang=...
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(metadata),
-                });
-                
-                if (!finalResponse.ok) {
-                     throw new Error('Server failed to process metadata.');
-                }
+            const response = await fetch('/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(reviewData)
+            });
 
-                const result = await finalResponse.json();
+            const result = await response.json();
 
-                // 7. Перенаправляем пользователя на главную страницу в случае успеха
-                if (result.status === 'success' && result.redirectUrl) {
-                    window.location.href = result.redirectUrl;
-                } else {
-                    throw new Error(result.message || 'Unknown error after submitting metadata.');
-                }
-
-            } catch (error) {
-                 console.error('Error submitting metadata:', error);
-                 alert('Failed to save review details. Please try again.');
-                 if (uploadOverlay) uploadOverlay.style.display = 'none';
+            if (response.ok && result.redirectUrl) {
+                window.location.href = result.redirectUrl;
+            } else {
+                throw new Error(result.message || 'Failed to save review details.');
             }
-        });
+
+        } catch (error) {
+            showError(error.message || 'An unexpected error occurred.');
+            resetUploadUI();
+        }
     });
+
+    async function uploadFile(file) {
+        // Получаем presigned URL
+        const presignedUrlResponse = await fetch('/api/generate-upload-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: file.name, contentType: file.type })
+        });
+        if (!presignedUrlResponse.ok) {
+            throw new Error('Could not get upload URL.');
+        }
+        const { url, objectName } = await presignedUrlResponse.json();
+
+        // Загружаем файл в R2
+        const uploadResponse = await fetch(url, {
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type }
+        });
+        if (!uploadResponse.ok) {
+            throw new Error(`Failed to upload ${file.name}.`);
+        }
+        
+        // Обновляем общий прогресс (упрощенно)
+        updateOverallProgress(selectedFiles.length);
+
+        return {
+            objectName: objectName,
+            mediaType: file.type.startsWith('image/') ? 'image' : 'video'
+        };
+    }
+    
+    let completedUploads = 0;
+    function updateOverallProgress(totalFiles) {
+        completedUploads++;
+        const progress = (completedUploads / totalFiles) * 100;
+        progressBar.style.width = `${progress}%`;
+        progressText.textContent = `Uploaded ${completedUploads} of ${totalFiles} files.`;
+    }
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.classList.remove('hidden');
+    }
+
+    function hideError() {
+        errorMessage.classList.add('hidden');
+    }
+    
+    function resetUploadUI() {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Submit Review';
+        progressContainer.classList.add('hidden');
+        progressBar.style.width = '0%';
+        progressText.textContent = '';
+        completedUploads = 0;
+    }
 });
