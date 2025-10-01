@@ -52,7 +52,7 @@
                         <div class="hidden md:block">
                             <div class="ml-10 flex items-baseline space-x-4">
                                 {% for category in categories_for_nav %}
-                                    <a href="{{ url_for('reviews.category_page', category_slug=category.slug, lang=lang) }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ category.name }}</a>
+                                    <a href="{{ url_for('reviews.category_page', category_slug=category.slug, lang=lang) }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr['nav_' + category.slug] or category.name }}</a>
                                 {% endfor %}
                                 <a href="{{ url_for('reviews.live_page', lang=lang) }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr.live }}</a>
                             </div>
@@ -62,13 +62,13 @@
                         <div class="ml-4 flex items-center md:ml-6">
                             {% if user %}
                                 {% if user.is_admin %}
-                                <a href="/admin?lang={{ lang }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr.nav_admin }}</a>
+                                <a href="{{ url_for('admin.manage_dashboard', lang=lang) }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr.nav_admin }}</a>
                                 {% endif %}
-                                <a href="/profile?lang={{ lang }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr.profile }}</a>
-                                <a href="/logout?lang={{ lang }}" class="bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">{{ tr.logout }}</a>
+                                <a href="{{ url_for('users.profile_page', lang=lang) }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr.profile }}</a>
+                                <a href="{{ url_for('auth.handle_logout', lang=lang) }}" class="bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">{{ tr.logout }}</a>
                             {% else %}
-                                <a href="/login?lang={{ lang }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr.login }}</a>
-                                <a href="/register?lang={{ lang }}" class="ml-4 bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">{{ tr.register }}</a>
+                                <a href="{{ url_for('auth.handle_login', lang=lang) }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr.login }}</a>
+                                <a href="{{ url_for('auth.handle_register', lang=lang) }}" class="ml-4 bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">{{ tr.register }}</a>
                             {% endif %}
                         </div>
                     </div>
@@ -89,19 +89,19 @@
             <div class="md:hidden hidden bg-slate-800 border-b border-slate-700" id="mobile-menu">
                 <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
                     {% for category in categories_for_nav %}
-                        <a href="{{ url_for('reviews.category_page', category_slug=category.slug, lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ category.name }}</a>
+                        <a href="{{ url_for('reviews.category_page', category_slug=category.slug, lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr['nav_' + category.slug] or category.name }}</a>
                     {% endfor %}
                     <a href="{{ url_for('reviews.live_page', lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.live }}</a>
                     <hr class="border-slate-700 my-2">
                     {% if user %}
                         {% if user.is_admin %}
-                        <a href="/admin" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.nav_admin }}</a>
+                        <a href="{{ url_for('admin.manage_dashboard', lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.nav_admin }}</a>
                         {% endif %}
-                        <a href="/profile?lang={{ lang }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.profile }}</a>
-                        <a href="/logout?lang={{ lang }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.logout }}</a>
+                        <a href="{{ url_for('users.profile_page', lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.profile }}</a>
+                        <a href="{{ url_for('auth.handle_logout', lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.logout }}</a>
                     {% else %}
-                        <a href="/login?lang={{ lang }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.login }}</a>
-                        <a href="/register?lang={{ lang }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.register }}</a>
+                        <a href="{{ url_for('auth.handle_login', lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.login }}</a>
+                        <a href="{{ url_for('auth.handle_register', lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.register }}</a>
                     {% endif %}
                 </div>
             </div>
@@ -126,9 +126,9 @@
                         {{ tr.footer_copyright }}
                     </p>
                     <div class="flex items-center space-x-6">
-                        <a href="/terms?lang={{ lang }}" class="text-sm text-gray-400 hover:text-white">{{ tr.footer_terms }}</a>
-                        <a href="/privacy?lang={{ lang }}" class="text-sm text-gray-400 hover:text-white">{{ tr.footer_privacy }}</a>
-                        <a href="/contact?lang={{ lang }}" class="text-sm text-gray-400 hover:text-white">{{ tr.footer_contact }}</a>
+                        <a href="{{ url_for('pages.terms_page', lang=lang) }}" class="text-sm text-gray-400 hover:text-white">{{ tr.footer_terms }}</a>
+                        <a href="{{ url_for('pages.privacy_page', lang=lang) }}" class="text-sm text-gray-400 hover:text-white">{{ tr.footer_privacy }}</a>
+                        <a href="{{ url_for('pages.contact_page', lang=lang) }}" class="text-sm text-gray-400 hover:text-white">{{ tr.footer_contact }}</a>
                     </div>
                 </div>
                 <div class="flex justify-center sm:justify-end items-center space-x-4 mt-4 text-sm">
