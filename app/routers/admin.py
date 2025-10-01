@@ -16,11 +16,10 @@ def before_request():
     """Защищает все маршруты в этом блюпринте"""
     pass
 
-# ИЗМЕНЕНО: dashboard -> manage_dashboard
 @admin_bp.route("/")
-def manage_dashboard():
+def manage_dashboard(): # Переименовано из admin_dashboard
     total_users = g.db.fetch_one("SELECT COUNT(*) AS total FROM users")['total']
-    total_reviews = g.db.fetch_one("SELECT COUNT(*) AS total FROM reviews")['total']
+    total_reviews = g.db.fetch_one("SELECT COUNT(*) AS total FROM reviews")['total'] # Исправлено: videos -> reviews
     total_likes = g.db.fetch_one("SELECT COUNT(*) AS total FROM likes")['total']
     pending_comments = g.db.fetch_one("SELECT COUNT(*) AS total FROM comments WHERE status = 'pending_review'")['total']
     
@@ -31,9 +30,8 @@ def manage_dashboard():
     return render_template("admin/dashboard.html", stats=stats)
 
 
-# ИЗМЕНЕНО: admin_reviews_list -> manage_reviews
 @admin_bp.route("/reviews")
-def manage_reviews():
+def manage_reviews(): # Переименовано из admin_reviews_list
     q = request.args.get('q', '')
     status = request.args.get('status', 'all')
     page = request.args.get('page', 1, type=int)
@@ -41,6 +39,7 @@ def manage_reviews():
     offset = (page - 1) * settings.ITEMS_PER_PAGE
     search_term = f"%{q}%" if q else "%"
     
+    # Исправлено: v -> r, videos -> reviews
     where_clauses = ["(r.what LIKE %s OR r.where LIKE %s OR u.email LIKE %s)"]
     params = [search_term, search_term, search_term]
 
@@ -101,9 +100,8 @@ def reject_review(review_id: int):
     return _handle_review_status_change(review_id, 'rejected')
 
 
-# ИЗМЕНЕНО: admin_users_list -> manage_users
 @admin_bp.route("/users")
-def manage_users():
+def manage_users(): # Переименовано из admin_users_list
     q = request.args.get('q', '')
     page = request.args.get('page', 1, type=int)
 
@@ -114,7 +112,7 @@ def manage_users():
     total_items = g.db.fetch_one(count_query, (search_term,))['total']
     total_pages = math.ceil(total_items / settings.ITEMS_PER_PAGE) if total_items > 0 else 0
     
-    select_query = "SELECT * FROM users WHERE email LIKE %s ORDER BY id LIMIT %s OFFSET %s"
+    select_query = "SELECT * FROM users WHERE email LIKE %s ORDER BY id DESC LIMIT %s OFFSET %s"
     result_users = g.db.fetch_all(select_query, (search_term, settings.ITEMS_PER_PAGE, offset))
     
     return render_template("admin/users.html", 
@@ -135,11 +133,10 @@ def admin_delete_user(user_id: int):
     return redirect(url_for('admin.manage_users', lang=lang))
 
 
-# ИЗМЕНЕНО: admin_comments_list -> manage_comments
 @admin_bp.route("/comments")
-def manage_comments():
+def manage_comments(): # Переименовано из admin_comments_list
     query = """
-        SELECT c.*, u.email as author_email, r.title as review_title, r.id as review_id
+        SELECT c.*, u.email as author_email, r.title as review_title
         FROM comments c
         JOIN users u ON c.user_id = u.id
         JOIN reviews r ON c.review_id = r.id
@@ -187,16 +184,14 @@ def approve_comment(comment_id: int):
 def reject_comment(comment_id: int):
     return _handle_comment_status_change(comment_id, 'rejected')
 
-# ИЗМЕНЕНО: admin_complaints_list -> manage_complaints
+
 @admin_bp.route("/complaints")
-def manage_complaints():
+def manage_complaints(): # Переименовано из admin_complaints_list
     query = """
-        SELECT c.*, u.email as reporter_email, 
-               r.id as review_id
+        SELECT c.*, u.email as reporter_email, cm.review_id
         FROM complaints c
         LEFT JOIN users u ON c.user_id = u.id
         LEFT JOIN comments cm ON c.content_id = cm.id AND c.content_type = 'comment'
-        LEFT JOIN reviews r ON cm.review_id = r.id OR (c.content_type = 'review' AND c.content_id = r.id)
         WHERE c.status = 'pending' ORDER BY c.id DESC
     """
     results = g.db.fetch_all(query)
