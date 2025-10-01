@@ -12,9 +12,6 @@ auth_bp = Blueprint('auth', __name__)
 
 # Хелпер для получения плейсхолдера, который адаптируется к типу БД
 def _get_param_placeholder():
-    # g.db становится доступным только после before_request,
-    # но db_manager (глобальный) уже имеет правильный param_style
-    # для той БД, к которой он подключен.
     return "?" if db_manager.param_style == 'qmark' else "%s"
 
 @auth_bp.route("/register", methods=['GET', 'POST'])
@@ -94,7 +91,8 @@ def handle_login():
         session["flash"] = {"category": "success", "message": g.tr["login_success_message"]}
         
         if user_data.get('is_admin'):
-            return redirect(url_for('admin.admin_dashboard'))
+            # !!!!!!!!!! ВОТ ЕДИНСТВЕННОЕ ИЗМЕНЕНИЕ !!!!!!!!!!
+            return redirect(url_for('admin.manage_dashboard'))
         
         return redirect(url_for('pages.home'))
 
