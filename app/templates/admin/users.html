@@ -4,6 +4,8 @@
     {{ tr.admin_users_title }}
 {% endblock %}
 
+{% block header %}{{ tr.admin_users_title }}{% endblock %}
+
 {% block admin_content %}
 <form method="GET" class="mb-6">
     <div class="flex">
@@ -41,7 +43,7 @@
               </td>
               <td class="relative py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
                 {% if u.id != user.id %}
-                <form action="/admin/users/{{ u.id }}/delete" method="POST" onsubmit="return confirm('{{ tr.admin_user_delete_confirm }}');">
+                <form action="{{ url_for('admin.delete_user', user_id=u.id) }}" method="POST" onsubmit="return confirm('{{ tr.admin_user_delete_confirm }}');">
                     <button type="submit" class="text-red-500 hover:text-red-400">{{ tr.admin_action_delete }}</button>
                 </form>
                 {% endif %}
@@ -67,7 +69,7 @@
                         {% endif %}
                     </div>
                      {% if u.id != user.id %}
-                        <form action="/admin/users/{{ u.id }}/delete" method="POST" onsubmit="return confirm('{{ tr.admin_user_delete_confirm }}');">
+                        <form action="{{ url_for('admin.delete_user', user_id=u.id) }}" method="POST" onsubmit="return confirm('{{ tr.admin_user_delete_confirm }}');">
                             <button type="submit" class="text-red-500 hover:text-red-400 text-sm">{{ tr.admin_action_delete }}</button>
                         </form>
                     {% endif %}

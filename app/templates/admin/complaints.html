@@ -4,6 +4,8 @@
     {{ tr.admin_complaints_title }}
 {% endblock %}
 
+{% block header %}{{ tr.admin_complaints_title }}{% endblock %}
+
 {% block admin_content %}
 <div class="flow-root">
     <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -25,13 +27,13 @@
                         <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0">{{ complaint.id }}</td>
                         <td class="px-3 py-4 text-sm text-gray-300">
                             {% if complaint.content_type == 'review' %}
-                                <a href="{{ url_for('videos.view_video_page', video_id=complaint.content_id, lang=lang) }}" target="_blank" class="text-blue-400 hover:underline">{{ tr.content_review }} #{{ complaint.content_id }}</a>
+                                <a href="{{ url_for('reviews.view_review_page', review_id=complaint.content_id, lang=lang) }}" target="_blank" class="text-blue-400 hover:underline">{{ tr.content_review }} #{{ complaint.content_id }}</a>
                             {% else %}
-                                <a href="{{ url_for('videos.view_video_page', video_id=complaint.video_id, lang=lang) }}#comment-{{ complaint.content_id }}" target="_blank" class="text-blue-400 hover:underline">{{ tr.content_comment }} #{{ complaint.content_id }}</a>
+                                <a href="{{ url_for('reviews.view_review_page', review_id=complaint.review_id, lang=lang) }}#comment-{{ complaint.content_id }}" target="_blank" class="text-blue-400 hover:underline">{{ tr.content_comment }} #{{ complaint.content_id }}</a>
                             {% endif %}
                         </td>
                         <td class="px-3 py-4 text-sm text-gray-300 max-w-xs truncate" title="{{ complaint.reason }}">{{ complaint.reason }}</td>
-                        <td class="px-3 py-4 text-sm text-gray-300">{{ complaint.reporter_email or 'N/A' }}</td>
+                        <td class="px-3 py-4 text-sm text-gray-300">{{ complaint.reporter_email or 'Аноним' }}</td>
                         <td class="relative py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
                             <div class="flex justify-end items-center space-x-4">
                                 <form action="{{ url_for('admin.handle_complaint', complaint_id=complaint.id) }}" method="POST" class="inline">
@@ -62,12 +64,12 @@
                              <p class="text-sm font-bold text-white">{{ complaint.reason }}</p>
                              <p class="text-xs text-gray-400">
                                 {% if complaint.content_type == 'review' %}
-                                    <a href="{{ url_for('videos.view_video_page', video_id=complaint.content_id, lang=lang) }}" target="_blank" class="text-blue-400 hover:underline">{{ tr.content_review }} #{{ complaint.content_id }}</a>
+                                    <a href="{{ url_for('reviews.view_review_page', review_id=complaint.content_id, lang=lang) }}" target="_blank" class="text-blue-400 hover:underline">{{ tr.content_review }} #{{ complaint.content_id }}</a>
                                 {% else %}
-                                    <a href="{{ url_for('videos.view_video_page', video_id=complaint.video_id, lang=lang) }}#comment-{{ complaint.content_id }}" target="_blank" class="text-blue-400 hover:underline">{{ tr.content_comment }} #{{ complaint.content_id }}</a>
+                                    <a href="{{ url_for('reviews.view_review_page', review_id=complaint.review_id, lang=lang) }}#comment-{{ complaint.content_id }}" target="_blank" class="text-blue-400 hover:underline">{{ tr.content_comment }} #{{ complaint.content_id }}</a>
                                 {% endif %}
                              </p>
-                             <p class="text-xs text-gray-500 mt-1">{{ tr.admin_table_reporter }}: {{ complaint.reporter_email or 'N/A' }}</p>
+                             <p class="text-xs text-gray-500 mt-1">{{ tr.admin_table_reporter }}: {{ complaint.reporter_email or 'Аноним' }}</p>
                         </div>
                         <p class="text-xs text-gray-500">ID: {{ complaint.id }}</p>
                     </div>

@@ -4,6 +4,8 @@
     {{ tr.admin_comments_title }}
 {% endblock %}
 
+{% block header %}{{ tr.admin_comments_title }}{% endblock %}
+
 {% block admin_content %}
 <div class="flow-root">
     <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -26,7 +28,7 @@
                         <td class="px-3 py-4 text-sm text-gray-300 max-w-sm truncate" title="{{ comment.content }}">{{ comment.content }}</td>
                         <td class="px-3 py-4 text-sm text-gray-300">{{ comment.author_email }}</td>
                         <td class="px-3 py-4 text-sm text-gray-300">
-                            <a href="{{ url_for('videos.view_video_page', video_id=comment.video_id, lang=lang) }}" target="_blank" class="text-blue-400 hover:underline">{{ comment.video_title }}</a>
+                            <a href="{{ url_for('reviews.view_review_page', review_id=comment.review_id, lang=lang) }}" target="_blank" class="text-blue-400 hover:underline">{{ comment.review_title }}</a>
                         </td>
                         <td class="relative py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
                             <div class="flex items-center justify-end space-x-4">
@@ -47,7 +49,7 @@
                 <div class="bg-slate-800 rounded-lg p-4">
                     <p class="text-sm text-white truncate">{{ comment.content }}</p>
                     <p class="text-xs text-gray-400 mt-1">{{ comment.author_email }}</p>
-                    <p class="text-xs text-gray-500 mt-1">{{ tr.admin_table_review_object }}: <a href="{{ url_for('videos.view_video_page', video_id=comment.video_id, lang=lang) }}" target="_blank" class="text-blue-400 hover:underline">{{ comment.video_title }}</a></p>
+                    <p class="text-xs text-gray-500 mt-1">{{ tr.admin_table_review_object }}: <a href="{{ url_for('reviews.view_review_page', review_id=comment.review_id, lang=lang) }}" target="_blank" class="text-blue-400 hover:underline">{{ comment.review_title }}</a></p>
                     <div class="mt-4 pt-4 border-t border-slate-700 flex justify-end items-center space-x-4">
                         <form action="{{ url_for('admin.approve_comment', comment_id=comment.id) }}" method="post" class="inline">
                             <button type="submit" class="text-green-400 hover:text-green-300">{{ tr.admin_approve }}</button>

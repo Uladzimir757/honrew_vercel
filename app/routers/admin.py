@@ -17,9 +17,9 @@ def before_request():
     pass
 
 @admin_bp.route("/")
-def manage_dashboard(): # Переименовано из admin_dashboard
+def manage_dashboard():
     total_users = g.db.fetch_one("SELECT COUNT(*) AS total FROM users")['total']
-    total_reviews = g.db.fetch_one("SELECT COUNT(*) AS total FROM reviews")['total'] # Исправлено: videos -> reviews
+    total_reviews = g.db.fetch_one("SELECT COUNT(*) AS total FROM reviews")['total']
     total_likes = g.db.fetch_one("SELECT COUNT(*) AS total FROM likes")['total']
     pending_comments = g.db.fetch_one("SELECT COUNT(*) AS total FROM comments WHERE status = 'pending_review'")['total']
     
@@ -31,7 +31,7 @@ def manage_dashboard(): # Переименовано из admin_dashboard
 
 
 @admin_bp.route("/reviews")
-def manage_reviews(): # Переименовано из admin_reviews_list
+def manage_reviews():
     q = request.args.get('q', '')
     status = request.args.get('status', 'all')
     page = request.args.get('page', 1, type=int)
@@ -39,7 +39,6 @@ def manage_reviews(): # Переименовано из admin_reviews_list
     offset = (page - 1) * settings.ITEMS_PER_PAGE
     search_term = f"%{q}%" if q else "%"
     
-    # Исправлено: v -> r, videos -> reviews
     where_clauses = ["(r.what LIKE %s OR r.where LIKE %s OR u.email LIKE %s)"]
     params = [search_term, search_term, search_term]
 
@@ -54,8 +53,17 @@ def manage_reviews(): # Переименовано из admin_reviews_list
     total_pages = math.ceil(total_items / settings.ITEMS_PER_PAGE) if total_items > 0 else 0
     
     params.extend([settings.ITEMS_PER_PAGE, offset])
+    # ИЗМЕНЕНО: Добавлены JOIN'ы для получения названий категорий
     select_query = f"""
-        SELECT r.*, u.email as author_email FROM reviews r JOIN users u ON r.user_id = u.id
+        SELECT 
+            r.*, 
+            u.email as author_email,
+            sc.name as subcategory_name,
+            c.name as category_name
+        FROM reviews r 
+        JOIN users u ON r.user_id = u.id
+        LEFT JOIN subcategories sc ON r.subcategory_id = sc.id
+        LEFT JOIN categories c ON sc.category_id = c.id
         WHERE {where_sql} ORDER BY r.id DESC LIMIT %s OFFSET %s
     """
     result_reviews = g.db.fetch_all(select_query, tuple(params))
@@ -67,7 +75,6 @@ def manage_reviews(): # Переименовано из admin_reviews_list
 
 def _handle_review_status_change(review_id: int, new_status: str):
     g.db.execute("UPDATE reviews SET status = %s WHERE id = %s", (new_status, review_id))
-    
     review_author_query = "SELECT r.title, u.email FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.id = %s"
     review_author_data = g.db.fetch_one(review_author_query, (review_id,))
     lang = session.get('lang', 'en')
@@ -89,22 +96,18 @@ def _handle_review_status_change(review_id: int, new_status: str):
     session["flash"] = {"category": "success", "message": message}
     return redirect(request.headers.get("referer", url_for('admin.manage_reviews')))
 
-
 @admin_bp.route("/reviews/<int:review_id>/approve", methods=['POST'])
 def approve_review(review_id: int):
     return _handle_review_status_change(review_id, 'published')
-
 
 @admin_bp.route("/reviews/<int:review_id>/reject", methods=['POST'])
 def reject_review(review_id: int):
     return _handle_review_status_change(review_id, 'rejected')
 
-
 @admin_bp.route("/users")
-def manage_users(): # Переименовано из admin_users_list
+def manage_users():
     q = request.args.get('q', '')
     page = request.args.get('page', 1, type=int)
-
     offset = (page - 1) * settings.ITEMS_PER_PAGE
     search_term = f"%{q}%" if q else "%"
 
@@ -119,9 +122,8 @@ def manage_users(): # Переименовано из admin_users_list
         users=result_users, current_page=page, total_pages=total_pages, query=q
     )
 
-
 @admin_bp.route("/users/<int:user_id>/delete", methods=['POST'])
-def admin_delete_user(user_id: int):
+def delete_user(user_id: int):
     lang = session.get('lang', 'en')
 
     if user_id == g.user["id"]:
@@ -132,11 +134,10 @@ def admin_delete_user(user_id: int):
     session["flash"] = {"category": "success", "message": g.tr.get("admin_user_deleted_success")}
     return redirect(url_for('admin.manage_users', lang=lang))
 
-
 @admin_bp.route("/comments")
-def manage_comments(): # Переименовано из admin_comments_list
+def manage_comments():
     query = """
-        SELECT c.*, u.email as author_email, r.title as review_title
+        SELECT c.*, u.email as author_email, r.title as review_title, r.id as review_id
         FROM comments c
         JOIN users u ON c.user_id = u.id
         JOIN reviews r ON c.review_id = r.id
@@ -184,19 +185,19 @@ def approve_comment(comment_id: int):
 def reject_comment(comment_id: int):
     return _handle_comment_status_change(comment_id, 'rejected')
 
-
 @admin_bp.route("/complaints")
-def manage_complaints(): # Переименовано из admin_complaints_list
+def manage_complaints():
     query = """
-        SELECT c.*, u.email as reporter_email, cm.review_id
+        SELECT c.*, u.email as reporter_email, 
+               r.id as review_id
         FROM complaints c
         LEFT JOIN users u ON c.user_id = u.id
         LEFT JOIN comments cm ON c.content_id = cm.id AND c.content_type = 'comment'
+        LEFT JOIN reviews r ON cm.review_id = r.id OR (c.content_type = 'review' AND c.content_id = r.id)
         WHERE c.status = 'pending' ORDER BY c.id DESC
     """
     results = g.db.fetch_all(query)
     return render_template("admin/complaints.html", complaints=results)
-
 
 @admin_bp.route("/complaints/<int:complaint_id>/handle", methods=['POST'])
 def handle_complaint(complaint_id: int):
@@ -231,7 +232,6 @@ def handle_complaint(complaint_id: int):
         session["flash"] = {"category": "error", "message": "Invalid action"}
 
     return redirect(url_for('admin.manage_complaints'))
-
 
 @admin_bp.route('/categories', methods=['GET', 'POST'])
 def manage_categories():

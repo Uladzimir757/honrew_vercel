@@ -4,6 +4,8 @@
     {{ tr.admin_reviews_title }}
 {% endblock %}
 
+{% block header %}{{ tr.admin_reviews_title }}{% endblock %}
+
 {% block admin_content %}
 <form method="GET" class="mb-6">
     <div class="flex flex-col sm:flex-row gap-4">
@@ -41,7 +43,7 @@
                     <tr>
                         <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0">{{ review.id }}</td>
                         <td class="px-3 py-4 text-sm text-gray-300 truncate max-w-xs">{{ review.what }}</td>
-                        <td class="px-3 py-4 text-sm text-gray-300">{{ review.category }}</td>
+                        <td class="px-3 py-4 text-sm text-gray-300">{{ review.category_name }} / {{ review.subcategory_name }}</td>
                         <td class="px-3 py-4 text-sm text-gray-300 truncate max-w-xs">{{ review.author_email }}</td>
                         <td class="px-3 py-4 text-sm">
                             {% if review.status == 'published' %}
@@ -54,15 +56,15 @@
                         </td>
                         <td class="relative py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
                             <div class="flex items-center justify-end space-x-4">
-                                <a href="/video/{{ review.id }}?lang={{ lang }}" target="_blank" class="text-blue-400 hover:text-blue-300">{{ tr.admin_action_view }}</a>
-                                <a href="/video/edit/{{ review.id }}?lang={{ lang }}" class="text-blue-400 hover:text-blue-300">{{ tr.admin_action_edit }}</a>
+                                <a href="{{ url_for('reviews.view_review_page', review_id=review.id, lang=lang) }}" target="_blank" class="text-blue-400 hover:text-blue-300">{{ tr.admin_action_view }}</a>
+                                <a href="{{ url_for('reviews.edit_review', review_id=review.id, lang=lang) }}" class="text-blue-400 hover:text-blue-300">{{ tr.admin_action_edit }}</a>
                                 {% if review.status != 'published' %}
-                                    <form action="/admin/reviews/{{ review.id }}/approve" method="post" class="inline">
+                                    <form action="{{ url_for('admin.approve_review', review_id=review.id) }}" method="post" class="inline">
                                         <button type="submit" class="text-green-400 hover:text-green-300">{{ tr.admin_approve }}</button>
                                     </form>
                                 {% endif %}
                                 {% if review.status != 'rejected' %}
-                                    <form action="/admin/reviews/{{ review.id }}/reject" method="post" class="inline">
+                                    <form action="{{ url_for('admin.reject_review', review_id=review.id) }}" method="post" class="inline">
                                         <button type="submit" class="text-red-400 hover:text-red-300">{{ tr.admin_reject }}</button>
                                     </form>
                                 {% endif %}
@@ -90,10 +92,10 @@
                             {% endif %}
                         </div>
                         <div class="flex items-center space-x-4 text-sm">
-                             <a href="/video/{{ review.id }}?lang={{ lang }}" target="_blank" class="text-blue-400 hover:text-blue-300">{{ tr.admin_action_view }}</a>
-                             <a href="/video/edit/{{ review.id }}?lang={{ lang }}" class="text-blue-400 hover:text-blue-300">{{ tr.admin_action_edit }}</a>
-                            {% if review.status != 'published' %}<form action="/admin/reviews/{{ review.id }}/approve" method="post" class="inline"><button type="submit" class="text-green-400 hover:text-green-300">{{ tr.admin_approve }}</button></form>{% endif %}
-                            {% if review.status != 'rejected' %}<form action="/admin/reviews/{{ review.id }}/reject" method="post" class="inline"><button type="submit" class="text-red-400 hover:text-red-300">{{ tr.admin_reject }}</button></form>{% endif %}
+                             <a href="{{ url_for('reviews.view_review_page', review_id=review.id, lang=lang) }}" target="_blank" class="text-blue-400 hover:text-blue-300">{{ tr.admin_action_view }}</a>
+                             <a href="{{ url_for('reviews.edit_review', review_id=review.id, lang=lang) }}" class="text-blue-400 hover:text-blue-300">{{ tr.admin_action_edit }}</a>
+                            {% if review.status != 'published' %}<form action="{{ url_for('admin.approve_review', review_id=review.id) }}" method="post" class="inline"><button type="submit" class="text-green-400 hover:text-green-300">{{ tr.admin_approve }}</button></form>{% endif %}
+                            {% if review.status != 'rejected' %}<form action="{{ url_for('admin.reject_review', review_id=review.id) }}" method="post" class="inline"><button type="submit" class="text-red-400 hover:text-red-300">{{ tr.admin_reject }}</button></form>{% endif %}
                         </div>
                     </div>
                 </div>

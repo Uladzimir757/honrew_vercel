@@ -4,6 +4,8 @@
     {{ tr.admin_dashboard_title }}
 {% endblock %}
 
+{% block header %}{{ tr.admin_dashboard_title }}{% endblock %}
+
 {% block admin_content %}
 <div class="p-4 text-white">
     <h2 class="text-2xl font-bold">{{ tr.admin_welcome }}, {{ user.email }}!</h2>
@@ -13,7 +15,7 @@
 <div class="mt-6">
     <dl class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         
-        <a href="{{ url_for('admin.admin_users_list') }}" class="relative block overflow-hidden rounded-lg bg-slate-700/50 px-4 pt-5 pb-8 shadow sm:px-6 sm:pt-6 hover:bg-slate-700 transition">
+        <a href="{{ url_for('admin.manage_users') }}" class="relative block overflow-hidden rounded-lg bg-slate-700/50 px-4 pt-5 pb-8 shadow sm:px-6 sm:pt-6 hover:bg-slate-700 transition">
             <dt>
                 <p class="truncate text-sm font-medium text-gray-400">{{ tr.admin_total_users }}</p>
             </dt>
@@ -22,7 +24,7 @@
             </dd>
         </a>
 
-        <a href="{{ url_for('admin.admin_reviews_list', status='pending_review') }}" class="relative block overflow-hidden rounded-lg bg-slate-700/50 px-4 pt-5 pb-8 shadow sm:px-6 sm:pt-6 hover:bg-slate-700 transition">
+        <a href="{{ url_for('admin.manage_reviews', status='pending_review') }}" class="relative block overflow-hidden rounded-lg bg-slate-700/50 px-4 pt-5 pb-8 shadow sm:px-6 sm:pt-6 hover:bg-slate-700 transition">
             <dt>
                 <p class="truncate text-sm font-medium text-gray-400">{{ tr.admin_total_reviews }}</p>
             </dt>
@@ -40,7 +42,7 @@
             </dd>
         </div>
 
-        <a href="{{ url_for('admin.admin_comments_list') }}" class="relative block overflow-hidden rounded-lg bg-slate-700/50 px-4 pt-5 pb-8 shadow sm:px-6 sm:pt-6 hover:bg-slate-700 transition">
+        <a href="{{ url_for('admin.manage_comments') }}" class="relative block overflow-hidden rounded-lg bg-slate-700/50 px-4 pt-5 pb-8 shadow sm:px-6 sm:pt-6 hover:bg-slate-700 transition">
             <dt>
                 <p class="truncate text-sm font-medium text-gray-400">{{ tr.admin_pending_comments }}</p>
             </dt>
