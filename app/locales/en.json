@@ -277,5 +277,15 @@
     "comment_published_success": "Your comment has been published.",
     "admin_comment_approved": "Comment approved and published.",
     "admin_comment_rejected": "Comment rejected.",
-    "nav_food": "Food"
+    "nav_food": "Food",
+    "nav_avtodilery": "Car Dealers",
+    "nav_avtoservisy": "Car Services",
+    "nav_dostavka_edy": "Food Delivery",
+    "nav_kafe": "Cafes",
+    "nav_restorany": "Restaurants",
+    "nav_arenda_kvartir": "Apartment Rentals",
+    "nav_pokupka_prodazha": "Buying/Selling",
+    "nav_byuti_industriya": "Beauty Industry",
+    "nav_remont_tekhniki": "Appliance Repair",
+    "nav_yuridicheskie_uslugi": "Legal Services"
 }

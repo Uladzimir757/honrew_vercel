@@ -277,5 +277,15 @@
     "comment_published_success": "Twój komentarz został opublikowany.",
     "admin_comment_approved": "Komentarz zatwierdzony i opublikowany.",
     "admin_comment_rejected": "Komentarz odrzucony.",
-    "nav_food": "Jedzenie"
+    "nav_food": "Jedzenie",
+    "nav_avtodilery": "Dealerzy samochodowi",
+    "nav_avtoservisy": "Serwisy samochodowe",
+    "nav_dostavka_edy": "Dostawa jedzenia",
+    "nav_kafe": "Kawiarnie",
+    "nav_restorany": "Restauracje",
+    "nav_arenda_kvartir": "Wynajem mieszkań",
+    "nav_pokupka_prodazha": "Kupno/Sprzedaż",
+    "nav_byuti_industriya": "Branża beauty",
+    "nav_remont_tekhniki": "Naprawa sprzętu",
+    "nav_yuridicheskie_uslugi": "Usługi prawne"
 }

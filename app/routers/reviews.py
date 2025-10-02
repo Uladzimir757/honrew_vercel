@@ -36,7 +36,7 @@ def delete_s3_objects(filenames):
     except Exception as e:
         logging.error(f"Ошибка удаления файлов из R2: {e}")
 
-# --- Ваши существующие функции (без изменений) ---
+# --- Ваши существующие функции ---
 
 @reviews_bp.route("/review/<int:review_id>")
 def view_review_page(review_id: int):
@@ -157,8 +157,6 @@ def api_handle_like(review_id: int):
     likes_count = g.db.fetch_one("SELECT COUNT(*) AS total FROM likes WHERE review_id = %s", (review_id,))['total']
     return jsonify({"likes_count": likes_count, "user_has_liked": user_has_liked})
 
-
-
 @reviews_bp.route("/api/review/<int:review_id>/comment", methods=['POST'])
 @login_required
 def api_handle_comment(review_id: int):
@@ -168,12 +166,10 @@ def api_handle_comment(review_id: int):
     
     status = 'published' if not check_text_for_stop_words(content, g.lang) else 'pending_review'
     
-    # Добавляем комментарий и сразу получаем его ID
     query = "INSERT INTO comments (content, review_id, user_id, status) VALUES (%s, %s, %s, %s) RETURNING id"
     new_comment_id = g.db.fetch_one(query, (content.strip(), review_id, g.user["id"], status))['id']
 
     if status == 'published':
-        # Если коммент опубликован, отправляем его данные обратно на фронтенд
         new_comment_data = {
             "id": new_comment_id,
             "content": content.strip(),
@@ -186,7 +182,6 @@ def api_handle_comment(review_id: int):
             "comment": new_comment_data
         })
     else:
-        # Если коммент ушел на модерацию, просто сообщаем об этом
         return jsonify({
             "status": "moderation",
             "message": g.tr.get("review_moderation_pending")
@@ -369,11 +364,9 @@ def generate_upload_url():
         logging.error(f"An unexpected error occurred in generate_upload_url: {e}")
         return jsonify({"error": "An internal server error occurred"}), 500
 
-# --- НОВАЯ, ПОЛНОЦЕННАЯ ФУНКЦИЯ РЕДАКТИРОВАНИЯ ---
 @reviews_bp.route('/review/edit/<int:review_id>', methods=['GET', 'POST'])
 @login_required
 def edit_review(review_id):
-    # Получаем полную информацию об отзыве, включая категорию и подкатегорию
     query = """
         SELECT r.*, sc.category_id 
         FROM reviews r 
@@ -383,16 +376,14 @@ def edit_review(review_id):
     review = g.db.fetch_one(query, (review_id,))
     if not review or (review['user_id'] != g.user['id'] and not g.user.get('is_admin')):
         abort(403)
-
+        
     if request.method == 'POST':
-        # Получаем данные из обычной формы (не JSON)
         title = request.form.get('title')
         description = request.form.get('description')
         what = request.form.get('what')
         where = request.form.get('where')
         subcategory_id = request.form.get('subcategory_id')
         
-        # Обновляем текстовые поля и категорию
         update_query = """
             UPDATE reviews SET title = %s, description = %s, what = %s, "where" = %s, subcategory_id = %s
             WHERE id = %s
@@ -402,7 +393,6 @@ def edit_review(review_id):
         session["flash"] = {"category": "success", "message": g.tr["review_updated_success"]}
         return redirect(url_for('reviews.view_review_page', review_id=review_id, lang=g.lang))
     
-    # Для GET-запроса: получаем медиа-файлы и категории для отображения в форме
     media_files = g.db.fetch_all("SELECT id, filename, media_type FROM media_files WHERE review_id = %s ORDER BY id", (review_id,))
     
     return render_template('edit_review.html', 
@@ -435,7 +425,6 @@ def delete_review(review_id: int):
         return redirect(referer)
     return redirect(url_for('users.profile_page', lang=lang))
 
-# Новый эндпоинт для удаления медиа-файла
 @reviews_bp.route("/media/delete/<int:media_id>", methods=['POST'])
 @login_required
 def delete_media_file(media_id: int):
@@ -450,3 +439,30 @@ def delete_media_file(media_id: int):
     g.db.execute("DELETE FROM media_files WHERE id = %s", (media_id,))
     
     return jsonify({"status": "success", "message": "File deleted."})
+
+# --- API для категорий и подкатегорий ---
+@reviews_bp.route("/api/categories")
+def api_get_categories():
+    query = "SELECT id, name, slug FROM categories ORDER BY name"
+    categories = g.db.fetch_all(query)
+    
+    translated_categories = []
+    for cat in categories:
+        translation_key = 'nav_' + cat['slug'].replace('-', '_')
+        cat['name'] = g.tr.get(translation_key, cat['name'])
+        translated_categories.append(cat)
+        
+    return jsonify(translated_categories)
+
+@reviews_bp.route("/api/subcategories/<int:category_id>")
+def api_get_subcategories(category_id):
+    query = "SELECT id, name, slug FROM subcategories WHERE category_id = %s ORDER BY name"
+    subcategories = g.db.fetch_all(query, (category_id,))
+
+    translated_subcategories = []
+    for subcat in subcategories:
+        translation_key = 'nav_' + subcat['slug'].replace('-', '_')
+        subcat['name'] = g.tr.get(translation_key, subcat['name'])
+        translated_subcategories.append(subcat)
+        
+    return jsonify(translated_subcategories)

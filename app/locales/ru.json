@@ -276,5 +276,15 @@
     "email_comment_approved_body": "<p>Здравствуйте!</p><p>Ваш комментарий к отзыву \"{review_title}\" был одобрен модератором:</p><blockquote style=\"border-left: 2px solid #ccc; padding-left: 10px; margin-left: 5px; font-style: italic;\">{comment_content}</blockquote><p>Посмотреть его можно по ссылке:</p><p><a href=\"{review_link}\">{review_link}</a></p>",
     "comment_published_success": "Ваш комментарий опубликован.",
     "admin_comment_approved": "Комментарий одобрен и опубликован.",
-    "admin_comment_rejected": "Комментарий отклонен."
+    "admin_comment_rejected": "Комментарий отклонен.",
+    "nav_avtodilery": "Автодилеры",
+    "nav_avtoservisy": "Автосервисы",
+    "nav_dostavka_edy": "Доставка еды",
+    "nav_kafe": "Кафе",
+    "nav_restorany": "Рестораны",
+    "nav_arenda_kvartir": "Аренда квартир",
+    "nav_pokupka_prodazha": "Покупка/Продажа",
+    "nav_byuti_industriya": "Бьюти индустрия",
+    "nav_remont_tekhniki": "Ремонт техники",
+    "nav_yuridicheskie_uslugi": "Юридические услуги"
 }
