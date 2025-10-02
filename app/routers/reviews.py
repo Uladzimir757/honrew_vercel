@@ -157,20 +157,40 @@ def api_handle_like(review_id: int):
     likes_count = g.db.fetch_one("SELECT COUNT(*) AS total FROM likes WHERE review_id = %s", (review_id,))['total']
     return jsonify({"likes_count": likes_count, "user_has_liked": user_has_liked})
 
+
+
 @reviews_bp.route("/api/review/<int:review_id>/comment", methods=['POST'])
 @login_required
 def api_handle_comment(review_id: int):
     content = request.form.get("content")
     if not content or not content.strip():
-        return jsonify({"error": "Comment cannot be empty"}), 400
+        return jsonify({"status": "error", "message": "Comment cannot be empty"}), 400
     
     status = 'published' if not check_text_for_stop_words(content, g.lang) else 'pending_review'
-    message = g.tr.get("comment_published_success", "Comment posted") if status == 'published' else g.tr["review_moderation_pending"]
     
-    query = "INSERT INTO comments (content, review_id, user_id, status) VALUES (%s, %s, %s, %s)"
-    g.db.execute(query, (content.strip(), review_id, g.user["id"], status))
-            
-    return jsonify({"status": "success", "message": message})
+    # Добавляем комментарий и сразу получаем его ID
+    query = "INSERT INTO comments (content, review_id, user_id, status) VALUES (%s, %s, %s, %s) RETURNING id"
+    new_comment_id = g.db.fetch_one(query, (content.strip(), review_id, g.user["id"], status))['id']
+
+    if status == 'published':
+        # Если коммент опубликован, отправляем его данные обратно на фронтенд
+        new_comment_data = {
+            "id": new_comment_id,
+            "content": content.strip(),
+            "author_email": g.user["email"],
+            "author_id": g.user["id"]
+        }
+        return jsonify({
+            "status": "success", 
+            "message": g.tr.get("comment_published_success"),
+            "comment": new_comment_data
+        })
+    else:
+        # Если коммент ушел на модерацию, просто сообщаем об этом
+        return jsonify({
+            "status": "moderation",
+            "message": g.tr.get("review_moderation_pending")
+        })
 
 @reviews_bp.route("/live")
 def live_page():
