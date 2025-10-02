@@ -276,5 +276,6 @@
     "email_comment_approved_body": "<p>Witaj!</p><p>Twój komentarz do recenzji \"{review_title}\" został zatwierdzony przez moderatora:</p><blockquote style=\"border-left: 2px solid #ccc; padding-left: 10px; margin-left: 5px; font-style: italic;\">{comment_content}</blockquote><p>Możesz go zobaczyć pod linkiem:</p><p><a href=\"{review_link}\">{review_link}</a></p>",
     "comment_published_success": "Twój komentarz został opublikowany.",
     "admin_comment_approved": "Komentarz zatwierdzony i opublikowany.",
-    "admin_comment_rejected": "Komentarz odrzucony."
+    "admin_comment_rejected": "Komentarz odrzucony.",
+    "nav_food": "Jedzenie"
 }

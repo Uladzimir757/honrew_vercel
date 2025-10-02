@@ -276,5 +276,6 @@
     "email_comment_approved_body": "<p>Hello!</p><p>Your comment on the review \"{review_title}\" has been approved by a moderator:</p><blockquote style=\"border-left: 2px solid #ccc; padding-left: 10px; margin-left: 5px; font-style: italic;\">{comment_content}</blockquote><p>You can view it at the link below:</p><p><a href=\"{review_link}\">{review_link}</a></p>",
     "comment_published_success": "Your comment has been published.",
     "admin_comment_approved": "Comment approved and published.",
-    "admin_comment_rejected": "Comment rejected."
+    "admin_comment_rejected": "Comment rejected.",
+    "nav_food": "Food"
 }
