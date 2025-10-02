@@ -196,9 +196,14 @@ def category_page(category_slug: str, subcategory_slug: str = None):
     if subcategory_slug:
         base_query += " AND sc.slug = %s"
         params.append(subcategory_slug)
-        current_category = g.db.fetch_one("SELECT name FROM subcategories WHERE slug=%s", (subcategory_slug,))
+        query = """
+            SELECT sc.*, c.slug as category_slug FROM subcategories sc 
+            JOIN categories c ON sc.category_id = c.id 
+            WHERE sc.slug=%s AND c.slug=%s
+        """
+        current_category = g.db.fetch_one(query, (subcategory_slug, category_slug))
     else:
-        current_category = g.db.fetch_one("SELECT name FROM categories WHERE slug=%s", (category_slug,))
+        current_category = g.db.fetch_one("SELECT * FROM categories WHERE slug=%s", (category_slug,))
 
     count_query = f"SELECT COUNT(r.id) AS total {base_query}"
     total_items = g.db.fetch_one(count_query, tuple(params))['total']
@@ -217,7 +222,7 @@ def category_page(category_slug: str, subcategory_slug: str = None):
     
     return render_template("category.html",
         reviews=reviews, current_page=page, total_pages=total_pages,
-        category_title=current_category['name'] if current_category else "Category"
+        category=current_category
     )
 
 @reviews_bp.route("/upload", methods=['GET', 'POST'])
