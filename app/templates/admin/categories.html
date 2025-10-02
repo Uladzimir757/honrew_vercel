@@ -1,74 +1,72 @@
-{% extends "base.html" %}
+{% extends "admin/base.html" %}
 
-{% block content %}
-<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    
-    <div class="flex flex-col items-center text-center mb-12">
-        <div class="bg-glass rounded-xl p-6">
-            <h1 class="text-sm font-semibold text-blue-400 tracking-wide uppercase">{{ tr.category_page_title }}</h1>
-            <p class="font-montserrat mt-2 text-3xl font-bold text-white tracking-tight sm:text-4xl">
-                {% if category and category.slug %}
-                    {{ tr['nav_' + category.slug.replace('-', '_')] or category.name }}
-                {% else %}
-                    {{ tr.category_page_title }}
-                {% endif %}
-            </p>
-        </div>
-        {% if user %}
-            <a href="{{ url_for('reviews.handle_upload', lang=lang) }}"
-                class="mt-8 inline-block bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors shadow-lg">
-                + {{ tr.add_review }}
-            </a>
-        {% endif %}
+{% block title %}{{ tr.admin_categories_title }}{% endblock %}
+{% block header %}{{ tr.admin_categories_title }}{% endblock %}
+
+{% block admin_content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+    <div class="lg:col-span-1 bg-slate-800 rounded-lg shadow p-6 h-fit">
+        <h3 class="text-xl font-semibold mb-4">{{ tr.admin_category_add_new }}</h3>
+        <form action="{{ url_for('admin.manage_categories') }}" method="POST" class="space-y-4">
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-300">{{ tr.admin_category_name }}</label>
+                <input type="text" name="name" id="name" required class="mt-1 block w-full bg-slate-700 border-slate-600 rounded-md shadow-sm text-white focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label for="slug" class="block text-sm font-medium text-gray-300">{{ tr.admin_category_slug }}</label>
+                <input type="text" name="slug" id="slug" required placeholder="naprimer-tak" class="mt-1 block w-full bg-slate-700 border-slate-600 rounded-md shadow-sm text-white focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label for="parent_id" class="block text-sm font-medium text-gray-300">{{ tr.admin_category_parent }}</label>
+                <select name="parent_id" id="parent_id" class="mt-1 block w-full bg-slate-700 border-slate-600 rounded-md shadow-sm text-white focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">-- {{ tr.admin_category_main }} --</option>
+                    {% for cat in main_categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                {{ tr.admin_category_add_button }}
+            </button>
+        </form>
     </div>
 
-    <div class="max-w-7xl mx-auto">
-        {% if reviews %}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {% for review in reviews %}
-            <div
-                class="bg-glass rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden">
-                <a href="{{ url_for('reviews.view_review_page', review_id=review.id, lang=lang) }}" class="group block relative">
-                    {% if review.filename %}
-                        {% if review.media_type == 'image' %}
-                        <img src="{{ settings.R2_PUBLIC_URL }}/{{ settings.S3_BUCKET_NAME }}/{{ review.filename }}" alt="{{ review.title }}" class="w-full h-48 object-cover" loading="lazy">
-                        {% else %}
-                        <video class="w-full h-48 object-cover bg-black" loading="lazy" muted playsinline>
-                            <source src="{{ settings.R2_PUBLIC_URL }}/{{ settings.S3_BUCKET_NAME }}/{{ review.filename }}" type="video/mp4">
-                        </video>
-                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <svg class="h-12 w-12 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
-                        </div>
-                        {% endif %}
-                    {% else %}
-                        <div class="w-full h-48 bg-slate-800 flex items-center justify-center">
-                            <span class="text-slate-500">{{ tr.no_media }}</span>
-                        </div>
-                    {% endif %}
-                </a>
-                <div class="p-5 flex-grow flex flex-col">
-                    <h4 class="text-lg font-bold text-white truncate">{{ review.what }}</h4>
-                    <p class="text-sm text-gray-400 mt-1 truncate">{{ review.where }}</p>
-                    <p class="text-md text-gray-200 mt-2 h-12 overflow-hidden flex-grow">{{ review.title }}</p>
-                    <div class="mt-2 flex items-center">
-                        {% for i in range(1, 6) %}
-                            <svg class="w-5 h-5 {% if i <= review.rating %}text-yellow-400{% else %}text-gray-600{% endif %}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.955a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.368 2.448a1 1 0 00-.364 1.118l1.287 3.955c.3.921-.755 1.688-1.54 1.118l-3.368-2.448a1 1 0 00-1.176 0l-3.368 2.448c-.784.57-1.838-.197-1.54-1.118l1.287-3.955a1 1 0 00-.364-1.118L2.35 9.382c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69L9.049 2.927z" /></svg>
-                        {% endfor %}
+    <div class="lg:col-span-2 bg-slate-800 rounded-lg shadow p-6">
+        <h3 class="text-xl font-semibold mb-4">{{ tr.admin_existing_categories }}</h3>
+        <div class="space-y-4">
+            {% for category_item in categories_tree %}
+            <div class="bg-slate-700/50 p-4 rounded-md">
+                <div class="flex justify-between items-center">
+                    <h4 class="text-lg font-bold">{{ category_item.data.name }}</h4>
+                    <div class="text-sm space-x-4 flex items-center">
+                        <a href="{{ url_for('admin.edit_category', category_id=category_item.data.id) }}" class="text-blue-400 hover:text-blue-300">{{ tr.admin_action_edit }}</a>
+                        <form action="{{ url_for('admin.delete_category', category_id=category_item.data.id) }}" method="POST" onsubmit="return confirm('{{ tr.admin_category_delete_confirm }}');" class="inline">
+                            <button type="submit" class="text-red-400 hover:text-red-300">{{ tr.admin_action_delete }}</button>
+                        </form>
                     </div>
-                    <p class="text-xs text-gray-500 mt-2 flex-grow">{{ tr.video_by }} {{ review.author_email }}</p>
                 </div>
+
+                {% if category_item.subcategories %}
+                <ul class="mt-3 ml-6 space-y-2 list-disc list-inside text-slate-300">
+                    {% for subcat in category_item.subcategories %}
+                    <li class="flex justify-between items-center">
+                        <span>{{ subcat.name }}</span>
+                         <div class="text-xs space-x-4 flex items-center">
+                            <a href="{{ url_for('admin.edit_category', category_id=subcat.id) }}" class="text-blue-400 hover:text-blue-300">{{ tr.admin_action_edit }}</a>
+                            <form action="{{ url_for('admin.delete_category', category_id=subcat.id) }}" method="POST" onsubmit="return confirm('{{ tr.admin_category_delete_confirm }}');" class="inline">
+                                <button type="submit" class="text-red-400 hover:text-red-300">{{ tr.admin_action_delete }}</button>
+                            </form>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
             </div>
+            {% else %}
+            <p class="text-slate-400">{{ tr.admin_no_categories_yet }}</p>
             {% endfor %}
         </div>
-        {% include 'partials/pagination.html' %}
-        {% else %}
-        <div class="bg-glass rounded-2xl text-center p-8">
-            <p class="text-lg text-white mb-6">{{ tr.no_reviews_in_category }}</p>
-            <a href="{{ url_for('reviews.handle_upload', lang=lang) }}" class="inline-block bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors shadow-lg">
-                {{ tr.add_review }}
-            </a>
-        </div>
-        {% endif %}
     </div>
 </div>
 {% endblock %}

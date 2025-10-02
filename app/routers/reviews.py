@@ -1,4 +1,4 @@
-# Файл: app/routers/reviews.py (старый videos.py)
+# Файл: app/routers/reviews.py
 import os
 import uuid
 import math
@@ -192,10 +192,11 @@ def category_page(category_slug: str, subcategory_slug: str = None):
     """
     params = [category_slug]
     
-    # Если есть подкатегория, добавляем условие
+    # Если есть подкатегория, добавляем условие и получаем ее данные
     if subcategory_slug:
         base_query += " AND sc.slug = %s"
         params.append(subcategory_slug)
+        # Запрос для подкатегории, который получает и ее, и родителя
         query = """
             SELECT sc.*, c.slug as category_slug FROM subcategories sc 
             JOIN categories c ON sc.category_id = c.id 
@@ -203,6 +204,7 @@ def category_page(category_slug: str, subcategory_slug: str = None):
         """
         current_category = g.db.fetch_one(query, (subcategory_slug, category_slug))
     else:
+        # Запрос для основной категории
         current_category = g.db.fetch_one("SELECT * FROM categories WHERE slug=%s", (category_slug,))
 
     count_query = f"SELECT COUNT(r.id) AS total {base_query}"
