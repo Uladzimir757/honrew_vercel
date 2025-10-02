@@ -62,8 +62,8 @@
             <div class="p-6 md:p-8">
                 <div class="flex justify-between items-start">
                     <div>
-                        <a href="{{ url_for('reviews.category_page', category_slug=review.category_slug, subcategory_slug=review.subcategory_slug, lang=lang) }}" class="text-xs font-semibold uppercase text-blue-400 hover:underline">
-                            {{ tr['nav_' + review.subcategory_slug.replace('-', '_')] or review.subcategory_name }}
+                        <a href="{{ url_for('users.user_profile_page', user_id=review.author_id, lang=lang) }}" class="text-blue-400 hover:underline">
+                            {{ review.author_email }}
                         </a>
                         <h1 class="text-3xl font-bold text-white mt-2">{{ review.what }}</h1>
                         <p class="text-lg text-gray-300 mt-1">{{ review.where }}</p>
