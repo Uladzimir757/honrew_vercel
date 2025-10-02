@@ -1,128 +1,104 @@
-// Файл: static/js/upload-progress.js
-
+// static/js/upload-progress.js
 document.addEventListener('DOMContentLoaded', () => {
-    const uploadForm = document.getElementById('upload-form');
+    const form = document.getElementById('upload-form');
+    if (!form) return;
+
     const fileInput = document.getElementById('file-input');
-    const fileListContainer = document.getElementById('file-list');
     const submitButton = document.getElementById('submit-button');
-    const progressContainer = document.getElementById('progress-container');
-    const progressBar = document.getElementById('progress-bar');
-    const progressText = document.getElementById('progress-text');
-    const errorMessageDiv = document.getElementById('error-message');
-
-    let uploadedFiles = [];
-
-    fileInput.addEventListener('change', () => {
-        fileListContainer.innerHTML = '';
-        uploadedFiles = [];
-        for (const file of fileInput.files) {
-            const fileItem = document.createElement('div');
-            fileItem.textContent = file.name;
-            fileItem.className = 'text-sm text-gray-400';
-            fileListContainer.appendChild(fileItem);
+    const requiredInputs = form.querySelectorAll('input[required], textarea[required], select[required]');
+    
+    // Функция для проверки, заполнены ли все обязательные поля
+    function checkFormValidity() {
+        let allValid = true;
+        requiredInputs.forEach(input => {
+            // Пропускаем проверку для скрытого select'а подкатегорий
+            if (input.id === 'subcategory' && input.closest('#subcategory-container').classList.contains('hidden')) {
+                return;
+            }
+            if (!input.value.trim()) {
+                allValid = false;
+            }
+        });
+        if (fileInput.files.length === 0) {
+            allValid = false;
         }
-    });
+        submitButton.disabled = !allValid;
+    }
 
-    uploadForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    // Проверяем форму при любом изменении
+    form.addEventListener('input', checkFormValidity);
+    fileInput.addEventListener('change', checkFormValidity);
+
+    // Изначально кнопка неактивна
+    checkFormValidity(); 
+
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
         submitButton.disabled = true;
-        errorMessageDiv.classList.add('hidden');
-        progressContainer.classList.remove('hidden');
 
-        const files = Array.from(fileInput.files);
-        let totalSize = files.reduce((acc, file) => acc + file.size, 0);
-        let uploadedSize = 0;
+        const files = fileInput.files;
+        const objectNames = [];
+        const totalFiles = files.length;
 
         try {
-            const presignedUrlResponses = await Promise.all(
-                files.map(file =>
-                    fetch('/api/generate-upload-url', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ filename: file.name, contentType: file.type || 'application/octet-stream' }),
-                    }).then(res => res.json())
-                )
-            );
-
-            const uploadPromises = files.map((file, index) => {
-                const response = presignedUrlResponses[index];
-                if (!response.url) {
-                    throw new Error('Failed to get presigned URL for ' + file.name);
-                }
+            // Шаг 1: Загрузка файлов по одному
+            for (let i = 0; i < totalFiles; i++) {
+                const file = files[i];
                 
-                // Определяем mediaType на основе Content-Type
-                const mediaType = file.type.startsWith('image/') ? 'image' : 'video';
-                
-                uploadedFiles.push({ objectName: response.objectName, mediaType: mediaType });
+                // Обновляем текст и фон кнопки
+                const progress = Math.round((i / totalFiles) * 100);
+                submitButton.textContent = `Uploading ${i + 1}/${totalFiles}...`;
+                submitButton.style.background = `linear-gradient(to right, #4f46e5 ${progress}%, #312e81 ${progress}%)`;
 
-                return new Promise((resolve, reject) => {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('PUT', response.url, true);
-                    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-
-                    xhr.upload.onprogress = (event) => {
-                        if (event.lengthComputable) {
-                            // Эта часть не будет работать для общего прогресса,
-                            // так как XHR не поддерживает отслеживание прогресса для нескольких файлов одновременно.
-                            // Мы будем обновлять прогресс после каждого успешного файла.
-                        }
-                    };
-                    
-                    xhr.onload = () => {
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            uploadedSize += file.size;
-                            const percentComplete = totalSize > 0 ? (uploadedSize / totalSize) * 100 : 0;
-                            progressBar.style.width = percentComplete + '%';
-                            progressText.textContent = `Uploaded ${index + 1} of ${files.length} files...`;
-                            resolve(xhr.response);
-                        } else {
-                            reject(new Error(`Upload failed for ${file.name}: ${xhr.statusText}`));
-                        }
-                    };
-
-                    xhr.onerror = () => reject(new Error(`Network error during upload for ${file.name}`));
-                    xhr.send(file);
+                const presignedUrlResponse = await fetch('/api/generate-upload-url', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ filename: file.name, contentType: file.type })
                 });
-            });
+                if (!presignedUrlResponse.ok) throw new Error('Failed to get presigned URL');
+                
+                const { url, objectName } = await presignedUrlResponse.json();
 
-            await Promise.all(uploadPromises);
-            progressText.textContent = "Finalizing review...";
+                await fetch(url, { method: 'PUT', body: file });
+                
+                objectNames.push({
+                    objectName: objectName,
+                    mediaType: file.type.startsWith('image') ? 'image' : 'video'
+                });
+            }
 
-            // ИСПРАВЛЕНО: Правильно собираем данные из формы
-            const formData = new FormData(uploadForm);
-            const reviewData = {
-                what: formData.get('what'),
-                where: formData.get('where'),
-                title: formData.get('title'),
-                description: formData.get('description'),
-                // Важное изменение: берем ID подкатегории
-                subcategory_id: formData.get('subcategory_id'), 
-                rating: formData.get('rating'),
-                objectNames: uploadedFiles
-            };
+            // Финальное обновление кнопки перед отправкой данных
+            submitButton.textContent = 'Saving review...';
+            submitButton.style.background = `#4f46e5`; // Полностью закрашиваем
 
+            // Шаг 2: Отправка данных формы
+            const formData = new FormData(form);
+            const jsonData = Object.fromEntries(formData.entries());
+            jsonData.objectNames = objectNames;
+            
             const finalResponse = await fetch('/upload', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(reviewData)
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(jsonData)
             });
 
+            if (!finalResponse.ok) throw new Error('Failed to submit review data');
             const result = await finalResponse.json();
 
-            if (result.status === 'success') {
+            if (result.status === 'success' && result.redirectUrl) {
                 window.location.href = result.redirectUrl;
             } else {
-                throw new Error(result.message || 'Failed to finalize review.');
+                throw new Error(result.message || 'Unknown error');
             }
 
         } catch (error) {
-            errorMessageDiv.textContent = error.message;
-            errorMessageDiv.classList.remove('hidden');
-            submitButton.disabled = false;
-            progressContainer.classList.add('hidden');
-            progressBar.style.width = '0%';
-            progressText.textContent = '';
-            uploadedFiles = []; // Сбрасываем, если была ошибка
+            console.error('Upload failed:', error);
+            alert('Upload failed: ' + error.message);
+            // Возвращаем кнопку в исходное состояние в случае ошибки
+            submitButton.textContent = document.getElementById('submit-button').textContent; // Исходный текст
+            submitButton.style.background = '';
+            checkFormValidity(); // Перепроверяем, должна ли кнопка быть активной
         }
     });
 });
