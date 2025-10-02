@@ -68,7 +68,7 @@
                                 <a href="{{ url_for('auth.handle_logout', lang=lang) }}" class="bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">{{ tr.logout }}</a>
                             {% else %}
                                 <a href="{{ url_for('auth.handle_login', lang=lang) }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr.login }}</a>
-                                <a href="{{ url_for('auth.handle_register', lang=lang) }}" class="ml-4 bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">{{ tr.register }}</a>
+                                <a href="{{ url_for('auth.handle_registration', lang=lang) }}" class="ml-4 bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">{{ tr.register }}</a>
                             {% endif %}
                         </div>
                     </div>
@@ -101,7 +101,7 @@
                         <a href="{{ url_for('auth.handle_logout', lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.logout }}</a>
                     {% else %}
                         <a href="{{ url_for('auth.handle_login', lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.login }}</a>
-                        <a href="{{ url_for('auth.handle_register', lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.register }}</a>
+                        <a href="{{ url_for('auth.handle_registration', lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.register }}</a>
                     {% endif %}
                 </div>
             </div>
