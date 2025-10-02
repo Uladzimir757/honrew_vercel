@@ -27,12 +27,16 @@
                 {% if media_items %}
                     {% set first_item = media_items[0] %}
                     {% if first_item.type == 'video' %}
-                        <video controls class="w-full h-auto" id="main-video">
+                        <video controls class="w-full h-auto" id="main-video" autoplay playsinline>
                             <source src="{{ first_item.url }}" type="video/mp4">
                         </video>
                     {% else %}
                         <img src="{{ first_item.url }}" alt="{{ review.title }}" class="w-full h-auto object-contain" id="main-image">
                     {% endif %}
+                {% else %}
+                    <div class="w-full h-full bg-slate-800 flex items-center justify-center">
+                        <span class="text-slate-500">{{ tr.no_media }}</span>
+                    </div>
                 {% endif %}
             </div>
 
@@ -43,11 +47,11 @@
                     <div class="flex-shrink-0 w-24 h-16 cursor-pointer rounded overflow-hidden border-2 border-transparent hover:border-blue-400" 
                          data-url="{{ item.url }}" data-type="{{ item.type }}">
                         {% if item.type == 'video' %}
-                            <video class="w-full h-full object-cover">
+                            <video class="w-full h-full object-cover pointer-events-none">
                                 <source src="{{ item.url }}" type="video/mp4">
                             </video>
                         {% else %}
-                            <img src="{{ item.url }}" alt="Thumbnail" class="w-full h-full object-cover">
+                            <img src="{{ item.url }}" alt="Thumbnail" class="w-full h-full object-cover pointer-events-none">
                         {% endif %}
                     </div>
                     {% endfor %}
@@ -58,12 +62,17 @@
             <div class="p-6 md:p-8">
                 <div class="flex justify-between items-start">
                     <div>
-                        <a href="{{ url_for('reviews.category_page', category_slug=review.category_slug, subcategory_slug=review.subcategory_slug) }}" class="text-xs font-semibold uppercase text-blue-400 hover:underline">
-                            {{ review.subcategory_name }}
+                        <a href="{{ url_for('reviews.category_page', category_slug=review.category_slug, subcategory_slug=review.subcategory_slug, lang=lang) }}" class="text-xs font-semibold uppercase text-blue-400 hover:underline">
+                            {{ tr['nav_' + review.subcategory_slug.replace('-', '_')] or review.subcategory_name }}
                         </a>
                         <h1 class="text-3xl font-bold text-white mt-2">{{ review.what }}</h1>
                         <p class="text-lg text-gray-300 mt-1">{{ review.where }}</p>
                     </div>
+                    {% if user %}
+                    <button type="button" class="report-button text-gray-400 hover:text-red-400 transition" data-content-id="{{ review.id }}" data-content-type="review" title="{{ tr.complaint_report }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H5a2 2 0 00-2 2zm0 0h7.5M12 13H9"/></svg>
+                    </button>
+                    {% endif %}
                 </div>
 
                 <div class="mt-4 flex items-center">
@@ -77,7 +86,7 @@
                 <div class="mt-4 pt-4 border-t border-slate-700">
                     <p class="text-gray-300 whitespace-pre-wrap">{{ review.description }}</p>
                     <p class="text-sm text-gray-500 mt-2">{{ tr.video_by }}: 
-                        <a href="/user/{{ review.author_id }}?lang={{ lang }}" class="text-blue-400 hover:underline">
+                        <a href="{{ url_for('users.user_profile', user_id=review.author_id, lang=lang) }}" class="text-blue-400 hover:underline">
                             {{ review.author_email }}
                         </a>
                     </p>
@@ -97,8 +106,66 @@
                     <span class="text-gray-400">{{ tr.likes_count }}</span>
                 </div>
             </div>
+        </div>
 
+        <div class="mt-8">
+            {% if company_reply %}
+            <div class="bg-glass rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-blue-300 mb-4">{{ tr.company_reply_title }}</h3>
+                <p class="text-gray-300 whitespace-pre-wrap">{{ company_reply.content }}</p>
+                <p class="text-sm text-gray-500 mt-4">{{ tr.video_by }} {{ company_reply.company_email }}</p>
             </div>
+            {% elif can_reply %}
+            <div class="bg-glass rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-blue-300 mb-4">{{ tr.company_reply_title }}</h3>
+                <form action="{{ url_for('reviews.handle_company_reply', review_id=review.id, lang=lang) }}" method="POST">
+                    <textarea name="content" rows="4" class="w-full bg-slate-700/50 border-slate-600 rounded-md text-white" placeholder="{{ tr.company_reply_placeholder }}"></textarea>
+                    <button type="submit" class="mt-4 bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition">{{ tr.company_reply_button }}</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="mt-8">
+            <h2 class="text-2xl font-bold text-white mb-6">{{ tr.comments_title }}</h2>
+
+            {% if user %}
+            <form id="comment-form" action="/api/review/{{ review.id }}/comment" method="POST" class="mb-8">
+                <textarea id="comment-content" name="content" rows="3" class="w-full bg-slate-700/50 border-slate-600 rounded-md text-white p-3 focus:ring-blue-500 focus:border-blue-500" placeholder="{{ tr.add_comment_placeholder }}"></textarea>
+                <div class="flex justify-end mt-2">
+                    <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition">{{ tr.add_comment_button }}</button>
+                </div>
+            </form>
+            {% else %}
+            <div class="text-center p-4 bg-slate-800 rounded-lg mb-8">
+                <p class="text-slate-300">{{ tr.login_to_comment }}</p>
+            </div>
+            {% endif %}
+
+            <div id="comments-container" class="space-y-6">
+                {% for comment in comments %}
+                <div class="flex items-start space-x-4" id="comment-{{ comment.id }}">
+                    <div class="flex-1 bg-slate-800/70 p-4 rounded-lg">
+                        <div class="flex justify-between items-start">
+                            <p class="font-semibold text-blue-300">
+                                <a href="{{ url_for('users.user_profile', user_id=comment.author_id, lang=lang) }}">{{ comment.author_email }}</a>
+                            </p>
+                            {% if user %}
+                            <button class="report-button text-gray-500 hover:text-red-400 transition" data-content-id="{{ comment.id }}" data-content-type="comment" title="{{ tr.complaint_report_comment }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H5a2 2 0 00-2 2zm0 0h7.5M12 13H9"/></svg>
+                            </button>
+                            {% endif %}
+                        </div>
+                        <p class="text-gray-300 mt-1">{{ comment.content }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% if not comments %}
+                <p id="no-comments-message" class="text-center text-gray-500 py-4">{{ tr.no_comments_yet_message }}</p>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 
@@ -115,13 +182,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const url = thumbnail.dataset.url;
             const type = thumbnail.dataset.type;
 
-            mainViewer.innerHTML = ''; // Очищаем основной просмотрщик
+            mainViewer.innerHTML = ''; 
 
             if (type === 'video') {
                 const video = document.createElement('video');
                 video.controls = true;
                 video.className = 'w-full h-auto';
                 video.autoplay = true;
+                video.playsinline = true;
                 const source = document.createElement('source');
                 source.src = url;
                 source.type = 'video/mp4';
@@ -147,4 +215,5 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 <script src="{{ url_for('static', filename='js/video-player.js') }}"></script>
 <script src="{{ url_for('static', filename='js/complaints.js') }}"></script>
+<script src="{{ url_for('static', filename='js/comments.js') }}"></script> {# <-- ВАЖНО: НОВЫЙ СКРИПТ #}
 {% endblock %}

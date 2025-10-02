@@ -15,13 +15,37 @@ from app.decorators import login_required
 
 reviews_bp = Blueprint('reviews', __name__)
 
+# --- Вспомогательная функция для удаления файлов из S3/R2 ---
+def delete_s3_objects(filenames):
+    if not filenames:
+        return
+    try:
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=settings.S3_ENDPOINT_URL,
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            region_name="auto"
+        )
+        objects_to_delete = [{'Key': filename} for filename in filenames]
+        s3_client.delete_objects(
+            Bucket=settings.S3_BUCKET_NAME,
+            Delete={'Objects': objects_to_delete}
+        )
+        logging.info(f"Successfully deleted {len(filenames)} files from R2.")
+    except Exception as e:
+        logging.error(f"Ошибка удаления файлов из R2: {e}")
+
+# --- Ваши существующие функции (без изменений) ---
+
 @reviews_bp.route("/review/<int:review_id>")
 def view_review_page(review_id: int):
     # Запрос основной информации об отзыве
     query_review = """
         SELECT r.*, u.email as author_email, u.id as author_id,
                sc.name as subcategory_name, sc.slug as subcategory_slug,
-               c.name as category_name, c.slug as category_slug
+               c.name as category_name, c.slug as category_slug,
+               sc.category_id as category_id
         FROM reviews r 
         JOIN users u ON r.user_id = u.id
         LEFT JOIN subcategories sc ON r.subcategory_id = sc.id
@@ -41,16 +65,15 @@ def view_review_page(review_id: int):
         return redirect(url_for('pages.home', lang=session.get('lang')))
 
     # Запрос всех медиа-файлов для этого отзыва
-    query_media = "SELECT filename, media_type FROM media_files WHERE review_id = %s ORDER BY id"
+    query_media = "SELECT id, filename, media_type FROM media_files WHERE review_id = %s ORDER BY id"
     media_files_data = g.db.fetch_all(query_media, (review_id,))
     
     base_media_url = f"{settings.R2_PUBLIC_URL}/{settings.S3_BUCKET_NAME}"
     media_items = [
-        {"url": f"{base_media_url}/{mf['filename']}", "type": mf['media_type']}
+        {"id": mf['id'], "url": f"{base_media_url}/{mf['filename']}", "type": mf['media_type']}
         for mf in media_files_data
     ]
 
-    # Лайки и комментарии теперь привязаны к review_id
     likes_count = g.db.fetch_one("SELECT COUNT(*) AS total FROM likes WHERE review_id = %s", (review_id,))['total']
     
     query_comments = """
@@ -77,7 +100,7 @@ def view_review_page(review_id: int):
 
     return render_template("video_view.html",
         review=review_data, 
-        media_items=media_items, # Передаем список медиа
+        media_items=media_items,
         likes_count=likes_count, 
         comments=review_comments,
         user_has_liked=user_has_liked, 
@@ -163,7 +186,6 @@ def live_page():
                mf.filename, mf.media_type
         FROM reviews r
         JOIN users u ON r.user_id = u.id
-        -- Получаем только первый медиа-файл для превью в ленте
         LEFT JOIN (
             SELECT DISTINCT ON (review_id) review_id, filename, media_type
             FROM media_files
@@ -182,7 +204,6 @@ def category_page(category_slug: str, subcategory_slug: str = None):
     page = request.args.get('page', 1, type=int)
     offset = (page - 1) * settings.ITEMS_PER_PAGE
     
-    # Собираем базовый запрос
     base_query = """
         FROM reviews r
         JOIN users u ON r.user_id = u.id
@@ -192,11 +213,9 @@ def category_page(category_slug: str, subcategory_slug: str = None):
     """
     params = [category_slug]
     
-    # Если есть подкатегория, добавляем условие и получаем ее данные
     if subcategory_slug:
         base_query += " AND sc.slug = %s"
         params.append(subcategory_slug)
-        # Запрос для подкатегории, который получает и ее, и родителя
         query = """
             SELECT sc.*, c.slug as category_slug FROM subcategories sc 
             JOIN categories c ON sc.category_id = c.id 
@@ -204,7 +223,6 @@ def category_page(category_slug: str, subcategory_slug: str = None):
         """
         current_category = g.db.fetch_one(query, (subcategory_slug, category_slug))
     else:
-        # Запрос для основной категории
         current_category = g.db.fetch_one("SELECT * FROM categories WHERE slug=%s", (category_slug,))
 
     count_query = f"SELECT COUNT(r.id) AS total {base_query}"
@@ -231,15 +249,13 @@ def category_page(category_slug: str, subcategory_slug: str = None):
 @login_required
 def handle_upload():
     if request.method == 'GET':
-        categories = g.db.fetch_all("SELECT id, name FROM categories ORDER BY name")
-        # Пытаемся получить id категории из GET-параметра
         category_slug = request.args.get('category')
         selected_category_id = None
         if category_slug:
             cat_data = g.db.fetch_one("SELECT id FROM categories WHERE slug = %s", (category_slug,))
             if cat_data:
                 selected_category_id = cat_data['id']
-        return render_template("upload.html", categories=categories, selected_category_id=selected_category_id)
+        return render_template("upload.html", selected_category_id=selected_category_id)
 
     if request.method == 'POST':
         data = request.get_json()
@@ -264,29 +280,23 @@ def handle_upload():
         status = 'published' if not check_text_for_stop_words(text_to_check, g.lang) else 'pending_review'
         
         try:
-            # 1. Создаем один отзыв
             review_query = """
                 INSERT INTO reviews (title, description, subcategory_id, user_id, what, "where", rating, status)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
             """
             review_params = (title, description, subcategory_id, g.user["id"], what, where, rating, status)
-            # Используем fetch_one, чтобы получить id созданного отзыва
             new_review = g.db.fetch_one(review_query, review_params)
             new_review_id = new_review['id']
 
-            # 2. В цикле привязываем к нему все медиафайлы
             for file_info in uploaded_files:
                 object_name = file_info.get('objectName')
                 media_type = file_info.get('mediaType', 'video')
                 if not object_name:
                     continue
                 
-                media_query = """
-                    INSERT INTO media_files (review_id, filename, media_type) VALUES (%s, %s, %s)
-                """
+                media_query = "INSERT INTO media_files (review_id, filename, media_type) VALUES (%s, %s, %s)"
                 g.db.execute(media_query, (new_review_id, object_name, media_type))
             
-            # Устанавливаем флеш-сообщение
             if status == 'published':
                 session["flash"] = {"category": "success", "message": g.tr.get("review_published_success")}
             else:
@@ -296,7 +306,6 @@ def handle_upload():
 
         except Exception as e:
             logging.error(f"Database error during multi-upload: {e}")
-            # Откатываем транзакцию, если что-то пошло не так
             g.db._connection.rollback()
             return jsonify({"status": "error", "message": "Failed to save review details."}), 500
 
@@ -340,29 +349,48 @@ def generate_upload_url():
         logging.error(f"An unexpected error occurred in generate_upload_url: {e}")
         return jsonify({"error": "An internal server error occurred"}), 500
 
+# --- НОВАЯ, ПОЛНОЦЕННАЯ ФУНКЦИЯ РЕДАКТИРОВАНИЯ ---
 @reviews_bp.route('/review/edit/<int:review_id>', methods=['GET', 'POST'])
 @login_required
 def edit_review(review_id):
-    review = g.db.fetch_one("SELECT * FROM reviews WHERE id = %s", (review_id,))
+    # Получаем полную информацию об отзыве, включая категорию и подкатегорию
+    query = """
+        SELECT r.*, sc.category_id 
+        FROM reviews r 
+        LEFT JOIN subcategories sc ON r.subcategory_id = sc.id
+        WHERE r.id = %s
+    """
+    review = g.db.fetch_one(query, (review_id,))
     if not review or (review['user_id'] != g.user['id'] and not g.user.get('is_admin')):
         abort(403)
-        
+
     if request.method == 'POST':
+        # Получаем данные из обычной формы (не JSON)
         title = request.form.get('title')
         description = request.form.get('description')
         what = request.form.get('what')
         where = request.form.get('where')
-        # Редактирование категории пока не добавляем для простоты
+        subcategory_id = request.form.get('subcategory_id')
         
-        query = """
-            UPDATE reviews SET title = %s, description = %s, what = %s, "where" = %s 
+        # Обновляем текстовые поля и категорию
+        update_query = """
+            UPDATE reviews SET title = %s, description = %s, what = %s, "where" = %s, subcategory_id = %s
             WHERE id = %s
         """
-        g.db.execute(query, (title, description, what, where, review_id))
+        g.db.execute(update_query, (title, description, what, where, subcategory_id, review_id))
+        
         session["flash"] = {"category": "success", "message": g.tr["review_updated_success"]}
         return redirect(url_for('reviews.view_review_page', review_id=review_id, lang=g.lang))
-        
-    return render_template('edit_review.html', review=review)
+    
+    # Для GET-запроса: получаем медиа-файлы и категории для отображения в форме
+    media_files = g.db.fetch_all("SELECT id, filename, media_type FROM media_files WHERE review_id = %s ORDER BY id", (review_id,))
+    
+    return render_template('edit_review.html', 
+        review=review, 
+        media_files=media_files,
+        selected_category_id=review.get('category_id'),
+        selected_subcategory_id=review.get('subcategory_id')
+    )
 
 @reviews_bp.route("/review/delete/<int:review_id>", methods=['POST'])
 @login_required
@@ -373,27 +401,12 @@ def delete_review(review_id: int):
     if not review_data or (review_data["user_id"] != g.user["id"] and not g.user.get("is_admin")):
         abort(403)
 
-    # Получаем список всех файлов, связанных с этим отзывом, перед удалением
-    media_files = g.db.fetch_all("SELECT filename FROM media_files WHERE review_id = %s", (review_id,))
-
-    try:
-        s3_client = boto3.client(
-            's3',
-            endpoint_url=settings.S3_ENDPOINT_URL,
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            region_name="auto"
-        )
-        # Удаляем каждый файл из R2
-        for media_file in media_files:
-            if media_file.get("filename"):
-                s3_client.delete_object(Bucket=settings.S3_BUCKET_NAME, Key=media_file["filename"])
-                logging.info(f"Successfully deleted {media_file['filename']} from R2.")
-
-    except Exception as e:
-        logging.error(f"Ошибка удаления файлов из R2 для отзыва {review_id}: {e}")
+    media_files_to_delete = g.db.fetch_all("SELECT filename FROM media_files WHERE review_id = %s", (review_id,))
+    filenames = [mf['filename'] for mf in media_files_to_delete if mf.get('filename')]
     
-    # Удаляем запись самого отзыва из БД (остальное удалится каскадно)
+    if filenames:
+        delete_s3_objects(filenames)
+    
     g.db.execute("DELETE FROM reviews WHERE id = %s", (review_id,))
     session["flash"] = {"category": "success", "message": g.tr["review_deleted_success"]}
 
@@ -401,3 +414,19 @@ def delete_review(review_id: int):
     if referer and "/admin/" in referer:
         return redirect(referer)
     return redirect(url_for('users.profile_page', lang=lang))
+
+# Новый эндпоинт для удаления медиа-файла
+@reviews_bp.route("/media/delete/<int:media_id>", methods=['POST'])
+@login_required
+def delete_media_file(media_id: int):
+    media_file = g.db.fetch_one("SELECT mf.filename, r.user_id FROM media_files mf JOIN reviews r ON mf.review_id = r.id WHERE mf.id = %s", (media_id,))
+
+    if not media_file or (media_file['user_id'] != g.user['id'] and not g.user.get('is_admin')):
+        abort(403)
+
+    if media_file.get("filename"):
+        delete_s3_objects([media_file["filename"]])
+
+    g.db.execute("DELETE FROM media_files WHERE id = %s", (media_id,))
+    
+    return jsonify({"status": "success", "message": "File deleted."})
