@@ -62,8 +62,8 @@
             <div class="p-6 md:p-8">
                 <div class="flex justify-between items-start">
                     <div>
-                        <a href="{{ url_for('users.user_profile_page', user_id=review.author_id, lang=lang) }}" class="text-blue-400 hover:underline">
-                            {{ review.author_email }}
+                        <a href="{{ url_for('reviews.category_page', category_slug=review.category_slug, subcategory_slug=review.subcategory_slug, lang=lang) }}" class="text-xs font-semibold uppercase text-blue-400 hover:underline">
+                            {{ tr['nav_' + review.subcategory_slug.replace('-', '_')] or review.subcategory_name }}
                         </a>
                         <h1 class="text-3xl font-bold text-white mt-2">{{ review.what }}</h1>
                         <p class="text-lg text-gray-300 mt-1">{{ review.where }}</p>
@@ -86,7 +86,7 @@
                 <div class="mt-4 pt-4 border-t border-slate-700">
                     <p class="text-gray-300 whitespace-pre-wrap">{{ review.description }}</p>
                     <p class="text-sm text-gray-500 mt-2">{{ tr.video_by }}: 
-                        <a href="{{ url_for('users.user_profile', user_id=review.author_id, lang=lang) }}" class="text-blue-400 hover:underline">
+                        <a href="{{ url_for('users.user_profile_page', user_id=review.author_id, lang=lang) }}" class="text-blue-400 hover:underline">
                             {{ review.author_email }}
                         </a>
                     </p>
@@ -148,7 +148,7 @@
                     <div class="flex-1 bg-slate-800/70 p-4 rounded-lg">
                         <div class="flex justify-between items-start">
                             <p class="font-semibold text-blue-300">
-                                <a href="{{ url_for('users.user_profile', user_id=comment.author_id, lang=lang) }}">{{ comment.author_email }}</a>
+                                <a href="{{ url_for('users.user_profile_page', user_id=comment.author_id, lang=lang) }}">{{ comment.author_email }}</a>
                             </p>
                             {% if user %}
                             <button class="report-button text-gray-500 hover:text-red-400 transition" data-content-id="{{ comment.id }}" data-content-type="comment" title="{{ tr.complaint_report_comment }}">
@@ -210,10 +210,11 @@ document.addEventListener('DOMContentLoaded', () => {
     {
         "complaint_success": "{{ tr.complaint_success }}",
         "complaint_error_network": "{{ tr.complaint_error_network }}",
-        "complaint_error_generic": "{{ tr.complaint_error_generic }}"
+        "complaint_error_generic": "{{ tr.complaint_error_generic }}",
+        "complaint_report_comment": "{{ tr.complaint_report_comment }}"
     }
 </script>
 <script src="{{ url_for('static', filename='js/video-player.js') }}"></script>
 <script src="{{ url_for('static', filename='js/complaints.js') }}"></script>
-<script src="{{ url_for('static', filename='js/comments.js') }}"></script> {# <-- ВАЖНО: НОВЫЙ СКРИПТ #}
+<script src="{{ url_for('static', filename='js/comments.js') }}"></script>
 {% endblock %}
