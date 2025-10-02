@@ -52,7 +52,7 @@
                         <div class="hidden md:block">
                             <div class="ml-10 flex items-baseline space-x-4">
                                 {% for category in categories_for_nav %}
-                                    <a href="{{ url_for('reviews.category_page', category_slug=category.slug, lang=lang) }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr['nav_' + category.slug] or category.name }}</a>
+                                    <a href="{{ url_for('reviews.category_page', category_slug=category.slug, lang=lang) }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr['nav_' + category.slug.replace('-', '_')] or category.name }}</a>
                                 {% endfor %}
                                 <a href="{{ url_for('reviews.live_page', lang=lang) }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr.live }}</a>
                             </div>
@@ -89,7 +89,7 @@
             <div class="md:hidden hidden bg-slate-800 border-b border-slate-700" id="mobile-menu">
                 <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
                     {% for category in categories_for_nav %}
-                        <a href="{{ url_for('reviews.category_page', category_slug=category.slug, lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr['nav_' + category.slug] or category.name }}</a>
+                        <a href="{{ url_for('reviews.category_page', category_slug=category.slug, lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr['nav_' + category.slug.replace('-', '_')] or category.name }}</a>
                     {% endfor %}
                     <a href="{{ url_for('reviews.live_page', lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.live }}</a>
                     <hr class="border-slate-700 my-2">
