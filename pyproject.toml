@@ -1,9 +1,0 @@
-Flask
-itsdangerous
-Jinja2
-psycopg2-binary
-python-multipart
-requests
-pydantic-settings
-passlib
-python-dotenv
