@@ -101,7 +101,6 @@ def manage_reviews():
 @admin_required
 def approve_review(review_id):
     g.db.execute("UPDATE reviews SET status = 'published' WHERE id = %s", (review_id,))
-    # Здесь можно добавить отправку email автору
     session['flash'] = {'category': 'success', 'message': g.tr['admin_review_approved']}
     return redirect(request.referrer or url_for('admin.manage_reviews'))
 
@@ -109,7 +108,6 @@ def approve_review(review_id):
 @admin_required
 def reject_review(review_id):
     g.db.execute("UPDATE reviews SET status = 'rejected' WHERE id = %s", (review_id,))
-    # Здесь можно добавить отправку email автору
     session['flash'] = {'category': 'success', 'message': g.tr['admin_review_rejected']}
     return redirect(request.referrer or url_for('admin.manage_reviews'))
 
@@ -121,10 +119,10 @@ def manage_categories():
         slug = request.form.get('slug')
         parent_id = request.form.get('parent_id')
 
-        if parent_id: # Это подкатегория
+        if parent_id: 
             g.db.execute("INSERT INTO subcategories (name, slug, category_id) VALUES (%s, %s, %s)",
                          (name, slug, int(parent_id)))
-        else: # Это основная категория
+        else: 
             g.db.execute("INSERT INTO categories (name, slug) VALUES (%s, %s)", (name, slug))
         
         session['flash'] = {'category': 'success', 'message': 'Категория добавлена.'}
@@ -143,41 +141,52 @@ def manage_categories():
                            categories_tree=categories_tree,
                            main_categories=main_categories)
 
-# --- НОВАЯ ФУНКЦИЯ ДЛЯ РЕДАКТИРОВАНИЯ ---
 @admin_bp.route('/categories/edit/<int:category_id>', methods=['GET', 'POST'])
 @admin_required
 def edit_category(category_id):
-    # Эта логика пока редактирует только основные категории для простоты.
-    # Для редактирования подкатегорий потребуется доработка.
-    category = g.db.fetch_one("SELECT * FROM categories WHERE id = %s", (category_id,))
-    if not category:
-        # Можно добавить поиск в подкатегориях или вывести ошибку
+    # Сначала ищем в подкатегориях
+    item = g.db.fetch_one("SELECT * FROM subcategories WHERE id = %s", (category_id,))
+    is_subcategory = True
+    if not item:
+        # Если не нашли, ищем в основных категориях
+        item = g.db.fetch_one("SELECT * FROM categories WHERE id = %s", (category_id,))
+        is_subcategory = False
+
+    if not item:
         abort(404)
 
     if request.method == 'POST':
         name = request.form.get('name')
         slug = request.form.get('slug')
+        parent_id = request.form.get('parent_id')
         
-        query = "UPDATE categories SET name = %s, slug = %s WHERE id = %s"
-        g.db.execute(query, (name, slug, category_id))
+        if is_subcategory:
+            # Обновляем подкатегорию
+            query = "UPDATE subcategories SET name = %s, slug = %s, category_id = %s WHERE id = %s"
+            g.db.execute(query, (name, slug, int(parent_id) if parent_id else None, category_id))
+        else:
+            # Обновляем основную категорию
+            query = "UPDATE categories SET name = %s, slug = %s WHERE id = %s"
+            g.db.execute(query, (name, slug, category_id))
         
         session['flash'] = {'category': 'success', 'message': 'Категория успешно обновлена.'}
         return redirect(url_for('admin.manage_categories'))
 
-    return render_template('admin/edit_category.html', category=category)
+    # Для GET-запроса получаем список всех основных категорий для выпадающего меню
+    main_categories = g.db.fetch_all("SELECT id, name FROM categories ORDER BY name")
+    return render_template('admin/edit_category.html', 
+                           item=item, 
+                           is_subcategory=is_subcategory,
+                           main_categories=main_categories)
 
-# --- НОВАЯ ФУНКЦИЯ ДЛЯ УДАЛЕНИЯ ---
 @admin_bp.route('/categories/delete/<int:category_id>', methods=['POST'])
 @admin_required
 def delete_category(category_id):
-    # Сначала пытаемся удалить как подкатегорию
     g.db.execute("DELETE FROM subcategories WHERE id = %s", (category_id,))
-    # Затем пытаемся удалить как основную категорию (сработает, если нет подкатегорий)
     g.db.execute("DELETE FROM categories WHERE id = %s", (category_id,))
     
     session['flash'] = {'category': 'success', 'message': 'Категория удалена.'}
     return redirect(url_for('admin.manage_categories'))
-
 
 @admin_bp.route('/complaints')
 @admin_required
