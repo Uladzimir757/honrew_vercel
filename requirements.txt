@@ -7,3 +7,4 @@ requests
 pydantic-settings
 passlib
 python-dotenv
+# force reinstall
