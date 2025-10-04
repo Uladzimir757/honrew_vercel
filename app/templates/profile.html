@@ -105,7 +105,7 @@
                     </h3>
                     <div class="mt-auto pt-4 border-t border-gray-700 flex justify-between items-center gap-4">
                         <a href="/video/edit/{{ video.id }}?lang={{ lang }}" class="flex-1 text-center bg-green-600 text-white font-bold py-2 px-3 rounded hover:bg-green-700 transition text-sm">{{ tr.edit }}</a>
-                        <form action="/video/delete/{{ video.id }}" method="post" onsubmit="return confirm('{{ tr.delete_confirm }}');" class="flex-1">
+                        <form action="{{ url_for('reviews.delete_review', review_id=video.id) }}" method="post" onsubmit="return confirm('{{ tr.delete_confirm }}');" class="flex-1">
                             <button type="submit" class="w-full bg-red-600 text-white font-bold py-2 px-3 rounded hover:bg-red-700 transition text-sm">{{ tr.delete }}</button>
                         </form>
                     </div>
