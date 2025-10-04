@@ -1,4 +1,4 @@
-# app/routers/auth.py (Полностью замените)
+# app/routers/auth.py (Полностью исправленная версия)
 import secrets
 from datetime import datetime, timedelta, timezone
 from flask import (Blueprint, request, session, redirect, url_for, 
@@ -6,17 +6,11 @@ from flask import (Blueprint, request, session, redirect, url_for,
 
 from app.security import get_password_hash, verify_password
 from app.utils import send_email_notification
-from app.database import db_manager # Импортируем для доступа к param_style
 
 auth_bp = Blueprint('auth', __name__)
 
-# Хелпер для получения плейсхолдера, который адаптируется к типу БД
-def _get_param_placeholder():
-    return "?" if db_manager.param_style == 'qmark' else "%s"
-
 @auth_bp.route("/register", methods=['GET', 'POST'])
 def handle_registration():
-    param_ph = _get_param_placeholder()
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
@@ -34,7 +28,7 @@ def handle_registration():
             session["flash"] = {"category": "error", "message": g.tr["error_password_too_weak"]}
             return redirect(url_for('auth.handle_registration', lang=session.get('lang')))
 
-        existing_user = g.db.fetch_one(f"SELECT id FROM users WHERE email = {param_ph}", (email,))
+        existing_user = g.db.fetch_one("SELECT id FROM users WHERE email = %s", (email,))
         if existing_user:
             session["flash"] = {"category": "error", "message": g.tr["error_user_exists"]}
             return redirect(url_for('auth.handle_registration', lang=session.get('lang')))
@@ -42,9 +36,9 @@ def handle_registration():
         hashed_password = get_password_hash(password)
         verification_token = secrets.token_urlsafe(32)
 
-        query = f"""
+        query = """
             INSERT INTO users (email, hashed_password, verification_token, user_type, is_admin, is_verified) 
-            VALUES ({param_ph}, {param_ph}, {param_ph}, {param_ph}, {param_ph}, {param_ph})
+            VALUES (%s, %s, %s, %s, %s, %s)
         """
         g.db.execute(query, (email, hashed_password, verification_token, user_type, False, False))
 
@@ -62,9 +56,8 @@ def handle_registration():
 
 @auth_bp.route("/verify/<token>")
 def verify_email(token: str):
-    param_ph = _get_param_placeholder()
-    query = f"UPDATE users SET is_verified = {param_ph}, verification_token = NULL WHERE verification_token = {param_ph}"
-    cursor = g.db.execute(query, (True, token))
+    query = "UPDATE users SET is_verified = TRUE, verification_token = NULL WHERE verification_token = %s"
+    cursor = g.db.execute(query, (token,))
     
     if cursor.rowcount > 0:
         session["flash"] = {"category": "success", "message": g.tr["verification_success"]}
@@ -72,12 +65,11 @@ def verify_email(token: str):
 
 @auth_bp.route("/login", methods=['GET', 'POST'])
 def handle_login():
-    param_ph = _get_param_placeholder()
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
         
-        user_data = g.db.fetch_one(f"SELECT * FROM users WHERE email = {param_ph}", (email,))
+        user_data = g.db.fetch_one("SELECT * FROM users WHERE email = %s", (email,))
         
         if not user_data or not verify_password(password, user_data['hashed_password']):
             session["flash"] = {"category": "error", "message": g.tr["error_login_failed"]}
@@ -91,7 +83,6 @@ def handle_login():
         session["flash"] = {"category": "success", "message": g.tr["login_success_message"]}
         
         if user_data.get('is_admin'):
-            # !!!!!!!!!! ВОТ ЕДИНСТВЕННОЕ ИЗМЕНЕНИЕ !!!!!!!!!!
             return redirect(url_for('admin.manage_dashboard'))
         
         return redirect(url_for('pages.home'))
@@ -100,13 +91,12 @@ def handle_login():
 
 @auth_bp.route("/resend-verification/<email>")
 def resend_verification_email(email: str):
-    param_ph = _get_param_placeholder()
     lang = session.get('lang', 'en')
-    user = g.db.fetch_one(f"SELECT * FROM users WHERE email = {param_ph}", (email,))
+    user = g.db.fetch_one("SELECT * FROM users WHERE email = %s", (email,))
 
     if user and not user['is_verified']:
         new_token = secrets.token_urlsafe(32)
-        g.db.execute_query(f"UPDATE users SET verification_token = {param_ph} WHERE email = {param_ph}", (new_token, email))
+        g.db.execute("UPDATE users SET verification_token = %s WHERE email = %s", (new_token, email))
         
         verification_link = url_for('auth.verify_email', token=new_token, lang=lang, _external=True)
         send_email_notification(
@@ -116,6 +106,7 @@ def resend_verification_email(email: str):
         )
         session["flash"] = {"category": "success", "message": g.tr["registration_check_email"]}
     else:
+        # Добавляем ключ для перевода, если его нет
         session["flash"] = {"category": "info", "message": g.tr.get("user_already_verified", "User is already verified or does not exist.")}
         
     return redirect(url_for('auth.handle_login', lang=lang))
@@ -131,17 +122,16 @@ def handle_logout():
 
 @auth_bp.route("/forgot-password", methods=['GET', 'POST'])
 def handle_forgot_password():
-    param_ph = _get_param_placeholder()
     if request.method == 'POST':
         email = request.form.get('email')
-        user = g.db.fetch_one(f"SELECT * FROM users WHERE email = {param_ph}", (email,))
+        user = g.db.fetch_one("SELECT * FROM users WHERE email = %s", (email,))
         
         if user:
             token = secrets.token_urlsafe(32)
             expires = datetime.now(timezone.utc) + timedelta(hours=1)
             
-            g.db.execute_query(
-                f"UPDATE users SET password_reset_token = {param_ph}, password_reset_expires = {param_ph} WHERE id = {param_ph}",
+            g.db.execute(
+                "UPDATE users SET password_reset_token = %s, password_reset_expires = %s WHERE id = %s",
                 (token, expires.isoformat(), user['id'])
             )
             
@@ -159,10 +149,9 @@ def handle_forgot_password():
 
 @auth_bp.route("/reset-password/<token>", methods=['GET', 'POST'])
 def reset_password_page(token: str):
-    param_ph = _get_param_placeholder()
     now_utc_iso = datetime.now(timezone.utc).isoformat()
     user = g.db.fetch_one(
-        f"SELECT * FROM users WHERE password_reset_token = {param_ph} AND password_reset_expires > {param_ph}", 
+        "SELECT * FROM users WHERE password_reset_token = %s AND password_reset_expires > %s", 
         (token, now_utc_iso)
     )
 
@@ -183,8 +172,8 @@ def reset_password_page(token: str):
             return redirect(url_for('auth.reset_password_page', token=token, lang=session.get('lang')))
 
         hashed_password = get_password_hash(password)
-        g.db.execute_query(
-            f"UPDATE users SET hashed_password = {param_ph}, password_reset_token = NULL, password_reset_expires = NULL WHERE id = {param_ph}",
+        g.db.execute(
+            "UPDATE users SET hashed_password = %s, password_reset_token = NULL, password_reset_expires = NULL WHERE id = %s",
             (hashed_password, user['id'])
         )
         
