@@ -27,11 +27,11 @@
                 {% if media_items %}
                     {% set first_item = media_items[0] %}
                     {% if first_item.type == 'video' %}
-                        <video controls class="w-full h-auto" id="main-video" autoplay playsinline>
+                        <video controls class="max-w-full max-h-full" id="main-video" autoplay playsinline>
                             <source src="{{ first_item.url }}" type="video/mp4">
                         </video>
                     {% else %}
-                        <img src="{{ first_item.url }}" alt="{{ review.title }}" class="w-full h-auto object-contain" id="main-image">
+                        <img src="{{ first_item.url }}" alt="{{ review.title }}" class="max-w-full max-h-full object-contain" id="main-image">
                     {% endif %}
                 {% else %}
                     <div class="w-full h-full bg-slate-800 flex items-center justify-center">
@@ -131,7 +131,7 @@
 
             {% if user %}
             <form id="comment-form" action="/api/review/{{ review.id }}/comment" method="POST" class="mb-8">
-                <textarea id="comment-content" name="content" rows="3" class="w-full bg-slate-700/50 border-slate-600 rounded-md text-white p-3 focus:ring-blue-500 focus:border-blue-500" placeholder="{{ tr.add_comment_placeholder }}"></textarea>
+                <textarea id="comment-content" name="content" rows="3" class="w-full bg-slate-700/85 border-slate-600 rounded-md text-white p-3 focus:ring-blue-500 focus:border-blue-500" placeholder="{{ tr.add_comment_placeholder }}"></textarea>
                 <div class="flex justify-end mt-2">
                     <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition">{{ tr.add_comment_button }}</button>
                 </div>
