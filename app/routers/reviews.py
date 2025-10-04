@@ -418,7 +418,7 @@ def delete_review(review_id: int):
         delete_s3_objects(filenames)
     
     g.db.execute("DELETE FROM reviews WHERE id = %s", (review_id,))
-    session["flash"] = {"category": "success", "message": g.tr["review_deleted_success"]}
+    session["flash"] = {"category": "success", "message": g.tr["video_deleted_success"]}
 
     referer = request.headers.get("referer")
     if referer and "/admin/" in referer:
