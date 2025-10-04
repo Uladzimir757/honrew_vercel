@@ -17,13 +17,21 @@ users_bp = Blueprint('users', __name__)
 @users_bp.route("/profile", methods=['GET'])
 @login_required
 def profile_page():
-    # ИЗМЕНЕНИЕ: Запрос к таблице 'reviews'
-    query_reviews = "SELECT * FROM reviews WHERE user_id = %s ORDER BY id DESC"
+    # Запрос к таблице 'reviews'
+    # ИЗМЕНЕНИЕ: Запрос теперь включает доп. поля для карточки отзыва
+    query_reviews = """
+        SELECT r.*, 
+               (SELECT mf.filename FROM media_files mf WHERE mf.review_id = r.id ORDER BY mf.id LIMIT 1) as filename,
+               (SELECT mf.media_type FROM media_files mf WHERE mf.review_id = r.id ORDER BY mf.id LIMIT 1) as media_type
+        FROM reviews r 
+        WHERE r.user_id = %s 
+        ORDER BY r.id DESC
+    """
     user_reviews = g.db.fetch_all(query_reviews, (g.user["id"],))
 
     return render_template("profile.html",
         db_user=g.user,
-        reviews=user_reviews, # Переименовано
+        videos=user_reviews, # ИСПРАВЛЕНО: reviews -> videos
         background_image="index.jpg"
     )
 
@@ -37,13 +45,14 @@ def user_profile_page(user_id: int):
 
     offset = (page - 1) * settings.ITEMS_PER_PAGE
     
-    # ИЗМЕНЕНИЕ: Запросы к таблице 'reviews'
     count_query = "SELECT COUNT(*) AS total FROM reviews WHERE user_id = %s AND status = 'published'"
     total_items = g.db.fetch_one(count_query, (user_id,))['total']
     total_pages = math.ceil(total_items / settings.ITEMS_PER_PAGE) if total_items > 0 else 0
 
     query_reviews = """
-        SELECT r.*, u.email as author_email 
+        SELECT r.*, u.email as author_email,
+               (SELECT mf.filename FROM media_files mf WHERE mf.review_id = r.id ORDER BY mf.id LIMIT 1) as filename,
+               (SELECT mf.media_type FROM media_files mf WHERE mf.review_id = r.id ORDER BY mf.id LIMIT 1) as media_type
         FROM reviews r JOIN users u ON r.user_id = u.id 
         WHERE r.user_id = %s AND r.status = 'published'
         ORDER BY r.id DESC LIMIT %s OFFSET %s
@@ -51,7 +60,7 @@ def user_profile_page(user_id: int):
     result_reviews = g.db.fetch_all(query_reviews, (user_id, settings.ITEMS_PER_PAGE, offset))
     
     return render_template("user_profile.html",
-        reviews=result_reviews, # Переименовано
+        videos=result_reviews, # ИСПРАВЛЕНО: reviews -> videos
         profile_user=profile_user,
         current_page=page,
         total_pages=total_pages,
@@ -150,7 +159,6 @@ def confirm_profile_deletion(token: str):
         session["flash"] = {"category": "error", "message": g.tr["error_invalid_token"]}
         return redirect(url_for('pages.home', lang=lang))
     user_id_to_delete = user_to_delete["id"]
-    # Файлы из R2 для отзывов удалятся вместе с отзывами (CASCADE)
     if user_to_delete["avatar_filename"]:
         try:
             s3_client = boto3.client('s3', endpoint_url=settings.S3_ENDPOINT_URL, aws_access_key_id=settings.AWS_ACCESS_KEY_ID, aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY, region_name="auto")
