@@ -131,7 +131,7 @@
 
             {% if user %}
             <form id="comment-form" action="/api/review/{{ review.id }}/comment" method="POST" class="mb-8">
-                <textarea id="comment-content" name="content" rows="3" class="w-full bg-slate-700/85 border-slate-600 rounded-md text-white p-3 focus:ring-blue-500 focus:border-blue-500" placeholder="{{ tr.add_comment_placeholder }}"></textarea>
+                <textarea id="comment-content" name="content" rows="3" class="w-full bg-slate-700/35 border-slate-600 rounded-md text-white p-3 focus:ring-blue-500 focus:border-blue-500" placeholder="{{ tr.add_comment_placeholder }}"></textarea>
                 <div class="flex justify-end mt-2">
                     <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition">{{ tr.add_comment_button }}</button>
                 </div>
