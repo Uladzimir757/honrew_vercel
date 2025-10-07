@@ -159,10 +159,6 @@ def api_handle_like(review_id: int):
 
 @reviews_bp.route("/api/review/<int:review_id>/comment", methods=['POST'])
 @login_required
-# app/routers/reviews.py
-
-@reviews_bp.route("/api/review/<int:review_id>/comment", methods=['POST'])
-@login_required
 def api_handle_comment(review_id: int):
     content = request.form.get("content")
     lang = session.get('lang', 'en')
@@ -176,15 +172,12 @@ def api_handle_comment(review_id: int):
 
     if status == 'published':
         # --- НАЧАЛО БЛОКА УВЕДОМЛЕНИЙ ---
-        # 1. Находим автора отзыва, чтобы отправить ему письмо
         author_info_query = "SELECT u.email, r.title FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.id = %s"
         author_info = g.db.fetch_one(author_info_query, (review_id,))
         
-        # 2. Проверяем, что комментарий оставил не сам автор отзыва
         if author_info and author_info["email"] != g.user["email"]:
             review_link = url_for('reviews.view_review_page', review_id=review_id, lang=lang, _external=True)
             
-            # 3. Отправляем email
             send_email_notification(
                 recipients=[author_info["email"]], 
                 subject_key="email_new_comment_subject",
@@ -210,7 +203,6 @@ def api_handle_comment(review_id: int):
             "comment": new_comment_data
         })
     else:
-        # Если комментарий ушел на модерацию, письмо не отправляем
         return jsonify({
             "status": "moderation",
             "message": g.tr.get("review_moderation_pending")
