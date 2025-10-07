@@ -4,7 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (commentForm) {
         commentForm.addEventListener('submit', function(event) {
             event.preventDefault();
-            
+            event.stopPropagation(); // Добавлено, чтобы остановить дальнейшее всплытие события
+
             const contentTextarea = document.getElementById('comment-content');
             const content = contentTextarea.value.trim();
             if (!content) return;
@@ -20,31 +21,21 @@ document.addEventListener('DOMContentLoaded', () => {
             fetch(actionUrl, {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    // Создаем HTML для нового комментария
                     const newComment = createCommentElement(data.comment);
-                    
-                    // Вставляем его в начало списка
                     const commentsContainer = document.getElementById('comments-container');
                     commentsContainer.prepend(newComment);
                     
-                    // Убираем сообщение "Комментариев пока нет", если оно было
                     const noCommentsMessage = document.getElementById('no-comments-message');
                     if (noCommentsMessage) {
                         noCommentsMessage.remove();
                     }
-
-                    // Очищаем поле ввода
                     contentTextarea.value = '';
-
                 } else {
-                    // Показываем сообщение (например, об уходе на модерацию)
                     alert(data.message);
                     contentTextarea.value = '';
                 }
@@ -61,7 +52,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Функция для создания HTML-элемента нового комментария
 function createCommentElement(comment) {
     const lang = new URLSearchParams(window.location.search).get('lang') || 'en';
     const tr = JSON.parse(document.getElementById('translations').textContent);
@@ -80,7 +70,7 @@ function createCommentElement(comment) {
                         data-content-id="${comment.id}" 
                         data-content-type="comment" 
                         title="${tr.complaint_report_comment || 'Report comment'}">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H5a2 2 0 00-2 2zm0 0h7.5M12 13H9"/>
                     </svg>
                 </button>
@@ -91,7 +81,6 @@ function createCommentElement(comment) {
     return commentWrapper;
 }
 
-// Простая функция для экранирования HTML, чтобы избежать XSS
 function escapeHTML(str) {
     const p = document.createElement('p');
     p.appendChild(document.createTextNode(str));
