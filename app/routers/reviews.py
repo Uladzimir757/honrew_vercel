@@ -168,16 +168,15 @@ def api_handle_comment(review_id: int):
     status = 'published' if not check_text_for_stop_words(content, g.lang) else 'pending_review'
     
     query = "INSERT INTO comments (content, review_id, user_id, status) VALUES (%s, %s, %s, %s) RETURNING id"
-    new_comment_id = g.db.fetch_one(query, (content.strip(), review_id, g.user["id"], status))['id']
+    new_comment_row = g.db.execute_and_fetch_one(query, (content.strip(), review_id, g.user["id"], status))
+    new_comment_id = new_comment_row['id']
 
     if status == 'published':
-        # --- НАЧАЛО БЛОКА УВЕДОМЛЕНИЙ ---
         author_info_query = "SELECT u.email, r.title FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.id = %s"
         author_info = g.db.fetch_one(author_info_query, (review_id,))
         
         if author_info and author_info["email"] != g.user["email"]:
             review_link = url_for('reviews.view_review_page', review_id=review_id, lang=lang, _external=True)
-            
             send_email_notification(
                 recipients=[author_info["email"]], 
                 subject_key="email_new_comment_subject",
@@ -189,7 +188,6 @@ def api_handle_comment(review_id: int):
                     "review_link": review_link
                 }
             )
-        # --- КОНЕЦ БЛОКА УВЕДОМЛЕНИЙ ---
 
         new_comment_data = {
             "id": new_comment_id,
@@ -321,7 +319,7 @@ def handle_upload():
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
             """
             review_params = (title, description, subcategory_id, g.user["id"], what, where, rating, status)
-            new_review = g.db.fetch_one(review_query, review_params)
+            new_review = g.db.execute_and_fetch_one(review_query, review_params)
             new_review_id = new_review['id']
 
             for file_info in uploaded_files:

@@ -6,9 +6,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Flask, request, session, g
 
 from app.config import settings
-# ИЗМЕНЕНИЕ: импортируем новые блюпринты
-from app.routers import (auth_bp, pages_bp, reviews_bp, users_bp, 
-                         complaints_bp, admin_bp, categories_bp)
+from app.routers import (auth_bp, pages_bp, reviews_bp, users_bp, admin_bp)
 from app.dependencies import get_current_user
 
 class PostgresManager:
@@ -31,6 +29,15 @@ class PostgresManager:
             cursor.execute(query, params)
             conn.commit()
             return cursor
+
+    # НОВЫЙ МЕТОД ДЛЯ INSERT/UPDATE С ВОЗВРАТОМ ДАННЫХ
+    def execute_and_fetch_one(self, query, params=None):
+        conn = self._get_connection()
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(query, params)
+            result = cursor.fetchone()
+            conn.commit()
+            return result
 
     def fetch_one(self, query, params=None):
         conn = self._get_connection()
@@ -59,15 +66,12 @@ def get_app():
                 template_folder='templates')
 
     app.secret_key = settings.SECRET_KEY
-
-    # ИЗМЕНЕНИЕ: регистрируем новые и переименованные блюпринты
+    
     app.register_blueprint(auth_bp)
     app.register_blueprint(pages_bp)
-    app.register_blueprint(reviews_bp) # <-- videos_bp теперь reviews_bp
+    app.register_blueprint(reviews_bp)
     app.register_blueprint(users_bp)
-    app.register_blueprint(complaints_bp)
     app.register_blueprint(admin_bp)
-    app.register_blueprint(categories_bp) # <-- Новый блюпринт
 
     @app.before_request
     def before_request_handler():
@@ -110,7 +114,6 @@ def get_app():
                 print(f"Error counting complaints: {e}")
                 pending_complaints_count = 0
 
-        # Получаем категории для навбара
         categories_nav = []
         try:
             categories_nav = g.db.fetch_all("SELECT name, slug FROM categories ORDER BY name")
