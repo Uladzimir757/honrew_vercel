@@ -159,8 +159,13 @@ def api_handle_like(review_id: int):
 
 @reviews_bp.route("/api/review/<int:review_id>/comment", methods=['POST'])
 @login_required
+# app/routers/reviews.py
+
+@reviews_bp.route("/api/review/<int:review_id>/comment", methods=['POST'])
+@login_required
 def api_handle_comment(review_id: int):
     content = request.form.get("content")
+    lang = session.get('lang', 'en')
     if not content or not content.strip():
         return jsonify({"status": "error", "message": "Comment cannot be empty"}), 400
     
@@ -170,6 +175,29 @@ def api_handle_comment(review_id: int):
     new_comment_id = g.db.fetch_one(query, (content.strip(), review_id, g.user["id"], status))['id']
 
     if status == 'published':
+        # --- НАЧАЛО БЛОКА УВЕДОМЛЕНИЙ ---
+        # 1. Находим автора отзыва, чтобы отправить ему письмо
+        author_info_query = "SELECT u.email, r.title FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.id = %s"
+        author_info = g.db.fetch_one(author_info_query, (review_id,))
+        
+        # 2. Проверяем, что комментарий оставил не сам автор отзыва
+        if author_info and author_info["email"] != g.user["email"]:
+            review_link = url_for('reviews.view_review_page', review_id=review_id, lang=lang, _external=True)
+            
+            # 3. Отправляем email
+            send_email_notification(
+                recipients=[author_info["email"]], 
+                subject_key="email_new_comment_subject",
+                body_key="email_new_comment_body",
+                template_vars={
+                    "commenter_email": g.user["email"],
+                    "review_title": author_info["title"],
+                    "comment_content": content.strip(),
+                    "review_link": review_link
+                }
+            )
+        # --- КОНЕЦ БЛОКА УВЕДОМЛЕНИЙ ---
+
         new_comment_data = {
             "id": new_comment_id,
             "content": content.strip(),
@@ -182,6 +210,7 @@ def api_handle_comment(review_id: int):
             "comment": new_comment_data
         })
     else:
+        # Если комментарий ушел на модерацию, письмо не отправляем
         return jsonify({
             "status": "moderation",
             "message": g.tr.get("review_moderation_pending")
