@@ -1,7 +1,7 @@
 # app/utils.py
 import logging
 from flask import g
-from mailersend.emails import Emails  # ИСПРАВЛЕННЫЙ ИМПОРТ
+from mailersend import MailerSend # ИСПРАВЛЕННЫЙ ИМПОРТ
 from app.config import settings
 
 # Настройка логирования
@@ -26,8 +26,8 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
         else:
             html_body = html_body_template
 
-        # Инициализируем MailerSend
-        mailer = Emails(settings.MAILERSEND_API_TOKEN)
+        # Инициализируем главный клиент MailerSend
+        mailersend = MailerSend(api_key=settings.MAILERSEND_API_TOKEN)
 
         # Определяем данные письма
         mail_from = {
@@ -43,11 +43,12 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
             "from": mail_from,
             "to": recipients_list,
             "subject": subject,
-            "html": html_body
+            "html": html_body,
+            "text": "This is a fallback text for email clients that do not render HTML." # Добавим текстовую версию
         }
         
-        # Отправляем письмо
-        mailer.send(mail_data)
+        # Отправляем письмо через эндпоинт 'email'
+        mailersend.email.send(mail_data)
         
         logger.info(f"Email sent successfully to {recipients} with subject '{subject}'")
 
