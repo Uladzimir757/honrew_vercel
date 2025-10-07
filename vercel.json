@@ -6,6 +6,10 @@
       "dest": "/static/$1"
     },
     {
+      "src": "/robots.txt",
+      "dest": "/static/robots.txt"
+    },
+    {
       "src": "/(.*)",
       "dest": "api/index.py"
     }
