@@ -1,7 +1,7 @@
 # app/utils.py
 import logging
 from flask import g
-from mailersend import emails
+from mailersend.emails import Emails  # ИСПРАВЛЕННЫЙ ИМПОРТ
 from app.config import settings
 
 # Настройка логирования
@@ -27,10 +27,9 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
             html_body = html_body_template
 
         # Инициализируем MailerSend
-        mailer = emails.NewEmail(settings.MAILERSEND_API_TOKEN)
+        mailer = Emails(settings.MAILERSEND_API_TOKEN)
 
         # Определяем данные письма
-        mail_body = {}
         mail_from = {
             "email": settings.MAIL_FROM_EMAIL,
             "name": "Honest Reviews" 
@@ -39,14 +38,16 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
             {"email": recipient} for recipient in recipients
         ]
 
-        # Устанавливаем параметры
-        mailer.set_mail_from(mail_from, mail_body)
-        mailer.set_mail_to(recipients_list, mail_body)
-        mailer.set_subject(subject, mail_body)
-        mailer.set_html_content(html_body, mail_body)
+        # Собираем все данные для отправки в один словарь
+        mail_data = {
+            "from": mail_from,
+            "to": recipients_list,
+            "subject": subject,
+            "html": html_body
+        }
         
         # Отправляем письмо
-        mailer.send(mail_body)
+        mailer.send(mail_data)
         
         logger.info(f"Email sent successfully to {recipients} with subject '{subject}'")
 
