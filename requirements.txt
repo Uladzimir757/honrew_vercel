@@ -7,3 +7,8 @@ requests
 pydantic-settings
 passlib
 python-dotenv
+mailersend-python
+gunicorn
+boto3
+alembic
+SQLAlchemy
