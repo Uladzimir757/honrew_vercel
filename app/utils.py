@@ -1,34 +1,25 @@
 # app/utils.py
-print("--- LOADING UTILS.PY VERSION FINAL ---")
-
 import logging
 from flask import g
 from mailersend import Email
 from app.config import settings
-from pydantic import BaseModel
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def send_email_notification(recipients: list, subject_key: str, body_key: str, template_vars: BaseModel = None):
+def send_email_notification(recipients: list, subject_key: str, body_key: str, template_vars: dict = None):
     """
-    Отправляет email-уведомление. Ожидает Pydantic-модель в template_vars.
+    Отправляет email-уведомление. Всегда ожидает 'template_vars' в виде словаря.
     """
+    if not isinstance(recipients, list):
+        recipients = [recipients]
+
     try:
-        # --- ДИАГНОСТИЧЕСКАЯ СТРОКА ---
-        print(f"DEBUG: Type of template_vars is {type(template_vars)}")
-        # -----------------------------
-
-        if not isinstance(recipients, list):
-            recipients = [recipients]
-
         subject = g.tr.get(subject_key, "Notification")
         html_body_template = g.tr.get(body_key, "")
         
-        if template_vars:
-            html_body = html_body_template.format(**template_vars.model_dump())
-        else:
-            html_body = html_body_template
+        # Этот код теперь простой и ожидает только словарь
+        html_body = html_body_template.format(**template_vars) if template_vars else html_body_template
 
         mailer = Email(settings.MAILERSEND_API_TOKEN)
 
@@ -53,8 +44,5 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
         logger.info(f"Email sent successfully to {recipients} with subject '{subject}'")
 
     except Exception as e:
-        # --- ДИАГНОСТИЧЕСКАЯ СТРОКА ---
-        print(f"DEBUG: Error occurred inside send_email_notification: {e}")
-        # -----------------------------
         logger.error(f"Failed to send email to {recipients}. Error: {e}")
         raise
