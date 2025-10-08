@@ -3,7 +3,6 @@ import logging
 from flask import g
 from mailersend import Email
 from app.config import settings
-from pydantic import BaseModel # Добавляем импорт для проверки
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -12,33 +11,22 @@ logger = logging.getLogger(__name__)
 def send_email_notification(recipients: list, subject_key: str, body_key: str, template_vars: dict = None):
     """
     Отправляет email-уведомление с использованием MailerSend.
+    Теперь всегда ожидает `template_vars` в виде словаря.
     """
     if not isinstance(recipients, list):
         recipients = [recipients]
 
     try:
-        # Получаем переведенные тему и тело письма
         subject = g.tr.get(subject_key, "Notification")
         html_body_template = g.tr.get(body_key, "")
         
-        # --- ИЗМЕНЕНИЕ ЗДЕСЬ ---
-        if template_vars:
-            # Проверяем, является ли template_vars Pydantic-моделью
-            if isinstance(template_vars, BaseModel):
-                # Если да, преобразуем ее в словарь перед форматированием
-                variables_dict = template_vars.model_dump()
-                html_body = html_body_template.format(**variables_dict)
-            else:
-                # Если это уже словарь, используем его как есть
-                html_body = html_body_template.format(**template_vars)
-        else:
-            html_body = html_body_template
+        # --- УПРОЩЕНО ---
+        # Просто форматируем строку, так как теперь мы уверены, что template_vars - это словарь
+        html_body = html_body_template.format(**template_vars) if template_vars else html_body_template
         # --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
-        # Инициализируем MailerSend
         mailer = Email(settings.MAILERSEND_API_TOKEN)
 
-        # Определяем данные письма
         mail_from = {
             "email": settings.MAIL_FROM_EMAIL,
             "name": "Honest Reviews" 
@@ -47,7 +35,6 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
             {"email": recipient} for recipient in recipients
         ]
 
-        # Собираем все данные для отправки в один словарь
         mail_data = {
             "from": mail_from,
             "to": recipients_list,
@@ -56,7 +43,6 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
             "text": "This is a fallback text for email clients that do not render HTML."
         }
         
-        # Отправляем письмо
         mailer.send(mail_data)
         
         logger.info(f"Email sent successfully to {recipients} with subject '{subject}'")
