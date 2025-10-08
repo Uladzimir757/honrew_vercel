@@ -147,12 +147,15 @@ def api_handle_like(review_id: int):
         
         if author_info and author_info["email"] != g.user["email"]:
             review_link = url_for('reviews.view_review_page', review_id=review_id, lang=lang, _external=True)
-            send_email_notification(
-                recipients=[author_info["email"]], 
-                subject_key="email_new_like_subject",
-                body_key="email_new_like_body",
-                template_vars={ "liker_email": g.user["email"], "review_title": author_info["title"], "review_link": review_link }
-            )
+            try:
+                send_email_notification(
+                    recipients=[author_info["email"]], 
+                    subject_key="email_new_like_subject",
+                    body_key="email_new_like_body",
+                    template_vars={ "liker_email": g.user["email"], "review_title": author_info["title"], "review_link": review_link }
+                )
+            except Exception as e:
+                logging.error(f"Failed to send 'new like' email notification: {e}")
             
     likes_count = g.db.fetch_one("SELECT COUNT(*) AS total FROM likes WHERE review_id = %s", (review_id,))['total']
     return jsonify({"likes_count": likes_count, "user_has_liked": user_has_liked})
@@ -161,20 +164,47 @@ def api_handle_like(review_id: int):
 @login_required
 def api_handle_comment(review_id: int):
     content = request.form.get("content")
+    lang = session.get('lang', 'en')
+
     if not content or not content.strip():
         return jsonify({"status": "error", "message": "Comment cannot be empty"}), 400
     
     status = 'published' if not check_text_for_stop_words(content, g.lang) else 'pending_review'
     
-    query = "INSERT INTO comments (content, review_id, user_id, status) VALUES (%s, %s, %s, %s) RETURNING id"
-    new_comment_id = g.db.fetch_one(query, (content.strip(), review_id, g.user["id"], status))['id']
+    query = "INSERT INTO comments (content, review_id, user_id, status) VALUES (%s, %s, %s, %s) RETURNING id, created_at"
+    new_comment_row = g.db.execute_and_fetch_one(query, (content.strip(), review_id, g.user["id"], status))
+    new_comment_id = new_comment_row['id']
+    new_comment_created_at = new_comment_row['created_at'].strftime('%Y-%m-%d %H:%M')
 
     if status == 'published':
+        # --- НАЧАЛО ВОССТАНОВЛЕННОГО БЛОКА ---
+        author_info_query = "SELECT u.email, r.title FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.id = %s"
+        author_info = g.db.fetch_one(author_info_query, (review_id,))
+        
+        if author_info and author_info["email"] != g.user["email"]:
+            review_link = url_for('reviews.view_review_page', review_id=review_id, lang=lang, _external=True)
+            try:
+                send_email_notification(
+                    recipients=[author_info["email"]], 
+                    subject_key="email_new_comment_subject",
+                    body_key="email_new_comment_body",
+                    template_vars={
+                        "commenter_email": g.user["email"], 
+                        "review_title": author_info["title"], 
+                        "comment_content": content.strip(), 
+                        "review_link": review_link
+                    }
+                )
+            except Exception as e:
+                logging.error(f"Failed to send 'new comment' email notification: {e}")
+        # --- КОНЕЦ ВОССТАНОВЛЕННОГО БЛОКА ---
+
         new_comment_data = {
-            "id": new_comment_id,
-            "content": content.strip(),
-            "author_email": g.user["email"],
-            "author_id": g.user["id"]
+            "id": new_comment_id, 
+            "content": content.strip(), 
+            "author_email": g.user["email"], 
+            "author_id": g.user["id"], 
+            "created_at": new_comment_created_at
         }
         return jsonify({
             "status": "success", 
