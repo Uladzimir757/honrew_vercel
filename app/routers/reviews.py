@@ -153,7 +153,7 @@ def api_handle_like(review_id: int):
                     recipients=[author_info["email"]], 
                     subject_key="email_new_like_subject",
                     body_key="email_new_like_body",
-                    template_vars=email_params
+                    template_vars=email_params.model_dump() # ЯВНО ПРЕОБРАЗУЕМ В СЛОВАРЬ
                 )
             except Exception as e:
                 logging.error(f"Failed to send 'new like' email notification: {e}")
@@ -194,7 +194,7 @@ def api_handle_comment(review_id: int):
                     recipients=[author_info["email"]], 
                     subject_key="email_new_comment_subject",
                     body_key="email_new_comment_body",
-                    template_vars=email_params
+                    template_vars=email_params.model_dump() # ЯВНО ПРЕОБРАЗУЕМ В СЛОВАРЬ
                 )
             except Exception as e:
                 logging.error(f"Failed to send 'new comment' email notification: {e}")
@@ -216,6 +216,8 @@ def api_handle_comment(review_id: int):
             "status": "moderation",
             "message": g.tr.get("review_moderation_pending")
         })
+
+# ... (остальные функции остаются без изменений) ...
 
 @reviews_bp.route("/live")
 def live_page():

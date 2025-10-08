@@ -1,19 +1,16 @@
 # Файл: app/utils.py
-
 import logging
 from flask import g
 from mailersend import Email
 from app.config import settings
 
-# --- Настройка логирования ---
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
-def send_email_notification(recipients: list, subject_key: str, body_key: str, template_vars=None):
+def send_email_notification(recipients: list, subject_key: str, body_key: str, template_vars: dict):
     """
     Отправляет email, используя API MailerSend.
-    Принимает 'template_vars' как Pydantic-модель или словарь.
+    Всегда ожидает 'template_vars' в виде готового словаря.
     """
     if not settings.MAILERSEND_API_TOKEN:
         logger.error("MAILERSEND_API_TOKEN is not set. Cannot send email.")
@@ -26,15 +23,8 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
         subject = g.tr.get(subject_key, "Notification")
         body_template = g.tr.get(body_key, "")
         
-        # 'Умная' проверка: преобразуем в словарь, только если это Pydantic-объект
-        vars_dict = {}
-        if template_vars:
-            if hasattr(template_vars, 'model_dump'):
-                vars_dict = template_vars.model_dump()
-            elif isinstance(template_vars, dict):
-                vars_dict = template_vars
-        
-        html_body = body_template.format(**vars_dict) if vars_dict else body_template
+        # Теперь здесь нет никакой логики, просто используем словарь
+        html_body = body_template.format(**template_vars) if template_vars else body_template
 
         mailer = Email(settings.MAILERSEND_API_TOKEN)
 
@@ -58,5 +48,4 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
 
     except Exception as e:
         logger.error(f"Failed to send email to {recipients} via MailerSend. Error: {e}")
-        # В реальном приложении можно добавить более детальную обработку ошибок
         raise
