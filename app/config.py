@@ -1,9 +1,13 @@
 # app/config.py
+import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    # Настройки базы данных
-    DATABASE_URL: str
+    # --- ИЗМЕНЕНИЕ: Убираем старую переменную и добавляем новые ---
+    # Мы больше не читаем заблокированную DATABASE_URL напрямую.
+    # Вместо этого читаем наши новые переменные.
+    PROD_DATABASE_URL: str
+    PREVIEW_DATABASE_URL: str
     
     # Настройки почты (MailerSend)
     MAILERSEND_API_TOKEN: str
@@ -23,6 +27,16 @@ class Settings(BaseSettings):
     
     # Прочие настройки
     ITEMS_PER_PAGE: int = 12
+
+    # --- ИЗМЕНЕНИЕ: Добавляем логику выбора правильного URL ---
+    @property
+    def DATABASE_URL(self) -> str:
+        # Vercel автоматически устанавливает системную переменную VERCEL_ENV
+        # Ее значения: 'production', 'preview', 'development'
+        if os.getenv('VERCEL_ENV') == 'production':
+            return self.PROD_DATABASE_URL
+        else: # Для 'preview' и 'development'
+            return self.PREVIEW_DATABASE_URL
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding='utf-8')
 
