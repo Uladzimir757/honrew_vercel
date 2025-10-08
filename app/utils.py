@@ -19,7 +19,7 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
         subject = g.tr.get(subject_key, "Notification")
         html_body_template = g.tr.get(body_key, "")
         
-        # ИСПРАВЛЕНО: Проверяем тип template_vars и преобразуем в словарь, если нужно
+        # Проверяем тип template_vars и преобразуем в словарь, если нужно
         vars_dict = {}
         if template_vars:
             if hasattr(template_vars, 'model_dump'):
@@ -56,4 +56,3 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
     except Exception as e:
         logger.error(f"Failed to send email to {recipients}. Error: {e}")
         raise
-}

@@ -1,4 +1,4 @@
-# app/routers/reviews.py
+# Файл: app/routers/reviews.py
 import os
 import uuid
 import math
@@ -12,10 +12,10 @@ from app.config import settings
 from app.moderation import check_text_for_stop_words
 from app.utils import send_email_notification
 from app.decorators import login_required
-from app.schemas import NewLikeEmailParams, NewCommentEmailParams
 
 reviews_bp = Blueprint('reviews', __name__)
 
+# --- Вспомогательная функция для удаления файлов из S3/R2 ---
 def delete_s3_objects(filenames):
     if not filenames:
         return
@@ -36,8 +36,11 @@ def delete_s3_objects(filenames):
     except Exception as e:
         logging.error(f"Ошибка удаления файлов из R2: {e}")
 
+# --- Ваши существующие функции ---
+
 @reviews_bp.route("/review/<int:review_id>")
 def view_review_page(review_id: int):
+    # Запрос основной информации об отзыве
     query_review = """
         SELECT r.*, u.email as author_email, u.id as author_id,
                sc.name as subcategory_name, sc.slug as subcategory_slug,
@@ -61,6 +64,7 @@ def view_review_page(review_id: int):
     if not is_published and not is_owner and not is_admin:
         return redirect(url_for('pages.home', lang=session.get('lang')))
 
+    # Запрос всех медиа-файлов для этого отзыва
     query_media = "SELECT id, filename, media_type FROM media_files WHERE review_id = %s ORDER BY id"
     media_files_data = g.db.fetch_all(query_media, (review_id,))
     
@@ -111,13 +115,17 @@ def view_review_page(review_id: int):
 def handle_company_reply(review_id: int):
     content = request.form.get('content')
     lang = session.get('lang', 'en')
+
     if g.user["user_type"] != 'company':
         abort(403)
+
     existing_reply = g.db.fetch_one("SELECT id FROM company_replies WHERE review_id = %s", (review_id,))
     if existing_reply:
         return "A reply for this review already exists.", 400
+
     query = "INSERT INTO company_replies (content, review_id, user_id) VALUES (%s, %s, %s)"
     g.db.execute(query, (content, review_id, g.user["id"]))
+
     session["flash"] = {"category": "success", "message": g.tr["company_reply_success"]}
     return redirect(url_for('reviews.view_review_page', review_id=review_id, lang=lang))
 
@@ -126,27 +134,26 @@ def handle_company_reply(review_id: int):
 def api_handle_like(review_id: int):
     existing_like = g.db.fetch_one("SELECT 1 FROM likes WHERE review_id = %s AND user_id = %s", (review_id, g.user["id"]))
     lang = session.get('lang', 'en')
+    
     if existing_like:
         g.db.execute("DELETE FROM likes WHERE review_id = %s AND user_id = %s", (review_id, g.user["id"]))
         user_has_liked = False
     else:
         g.db.execute("INSERT INTO likes (review_id, user_id) VALUES (%s, %s)", (review_id, g.user["id"]))
         user_has_liked = True
+        
         author_info_query = "SELECT u.email, r.title FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.id = %s"
         author_info = g.db.fetch_one(author_info_query, (review_id,))
+        
         if author_info and author_info["email"] != g.user["email"]:
             review_link = url_for('reviews.view_review_page', review_id=review_id, lang=lang, _external=True)
-            try:
-                template_vars_dict = {"liker_email": g.user["email"], "review_title": author_info["title"], "review_link": review_link}
-                email_params = NewLikeEmailParams(**template_vars_dict)
-                send_email_notification(
-                    recipients=[author_info["email"]], 
-                    subject_key="email_new_like_subject",
-                    body_key="email_new_like_body",
-                    template_vars=email_params  # ИСПРАВЛЕНО: Убран .model_dump()
-                )
-            except Exception as e:
-                logging.error(f"Failed to send 'new like' email notification: {e}")
+            send_email_notification(
+                recipients=[author_info["email"]], 
+                subject_key="email_new_like_subject",
+                body_key="email_new_like_body",
+                template_vars={ "liker_email": g.user["email"], "review_title": author_info["title"], "review_link": review_link }
+            )
+            
     likes_count = g.db.fetch_one("SELECT COUNT(*) AS total FROM likes WHERE review_id = %s", (review_id,))['total']
     return jsonify({"likes_count": likes_count, "user_has_liked": user_has_liked})
 
@@ -154,43 +161,55 @@ def api_handle_like(review_id: int):
 @login_required
 def api_handle_comment(review_id: int):
     content = request.form.get("content")
-    lang = session.get('lang', 'en')
     if not content or not content.strip():
         return jsonify({"status": "error", "message": "Comment cannot be empty"}), 400
+    
     status = 'published' if not check_text_for_stop_words(content, g.lang) else 'pending_review'
-    query = "INSERT INTO comments (content, review_id, user_id, status) VALUES (%s, %s, %s, %s) RETURNING id, created_at"
-    new_comment_row = g.db.execute_and_fetch_one(query, (content.strip(), review_id, g.user["id"], status))
-    new_comment_id = new_comment_row['id']
-    new_comment_created_at = new_comment_row['created_at'].strftime('%Y-%m-%d %H:%M')
+    
+    query = "INSERT INTO comments (content, review_id, user_id, status) VALUES (%s, %s, %s, %s) RETURNING id"
+    new_comment_id = g.db.fetch_one(query, (content.strip(), review_id, g.user["id"], status))['id']
+
     if status == 'published':
-        author_info_query = "SELECT u.email, r.title FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.id = %s"
-        author_info = g.db.fetch_one(author_info_query, (review_id,))
-        if author_info and author_info["email"] != g.user["email"]:
-            review_link = url_for('reviews.view_review_page', review_id=review_id, lang=lang, _external=True)
-            try:
-                template_vars_dict = {"commenter_email": g.user["email"], "review_title": author_info["title"], "comment_content": content.strip(), "review_link": review_link}
-                email_params = NewCommentEmailParams(**template_vars_dict)
-                send_email_notification(
-                    recipients=[author_info["email"]], 
-                    subject_key="email_new_comment_subject",
-                    body_key="email_new_comment_body",
-                    template_vars=email_params  # ИСПРАВЛЕНО: Убран .model_dump()
-                )
-            except Exception as e:
-                logging.error(f"Failed to send 'new comment' email notification: {e}")
-        new_comment_data = {"id": new_comment_id, "content": content.strip(), "author_email": g.user["email"], "author_id": g.user["id"], "created_at": new_comment_created_at}
-        return jsonify({"status": "success", "message": g.tr.get("comment_published_success"), "comment": new_comment_data})
+        new_comment_data = {
+            "id": new_comment_id,
+            "content": content.strip(),
+            "author_email": g.user["email"],
+            "author_id": g.user["id"]
+        }
+        return jsonify({
+            "status": "success", 
+            "message": g.tr.get("comment_published_success"),
+            "comment": new_comment_data
+        })
     else:
-        return jsonify({"status": "moderation", "message": g.tr.get("review_moderation_pending")})
+        return jsonify({
+            "status": "moderation",
+            "message": g.tr.get("review_moderation_pending")
+        })
 
 @reviews_bp.route("/live")
 def live_page():
     page = request.args.get('page', 1, type=int)
     offset = (page - 1) * settings.ITEMS_PER_PAGE
+
     count_query = "SELECT COUNT(*) AS total FROM reviews WHERE status = 'published'"
     total_items = g.db.fetch_one(count_query)['total']
     total_pages = math.ceil(total_items / settings.ITEMS_PER_PAGE) if total_items > 0 else 0
-    query = "SELECT r.id, r.title, r.description, r.rating, r.user_id, u.email as author_email, mf.filename, mf.media_type FROM reviews r JOIN users u ON r.user_id = u.id LEFT JOIN (SELECT DISTINCT ON (review_id) review_id, filename, media_type FROM media_files ORDER BY review_id, id) AS mf ON r.id = mf.review_id WHERE r.status = 'published' ORDER BY r.created_at DESC LIMIT %s OFFSET %s"
+
+    query = """
+        SELECT r.id, r.title, r.description, r.rating, r.user_id, u.email as author_email,
+               mf.filename, mf.media_type
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        LEFT JOIN (
+            SELECT DISTINCT ON (review_id) review_id, filename, media_type
+            FROM media_files
+            ORDER BY review_id, id
+        ) AS mf ON r.id = mf.review_id
+        WHERE r.status = 'published'
+        ORDER BY r.created_at DESC
+        LIMIT %s OFFSET %s
+    """
     reviews = g.db.fetch_all(query, (settings.ITEMS_PER_PAGE, offset))
     return render_template("live.html", reviews=reviews, current_page=page, total_pages=total_pages)
 
@@ -199,22 +218,47 @@ def live_page():
 def category_page(category_slug: str, subcategory_slug: str = None):
     page = request.args.get('page', 1, type=int)
     offset = (page - 1) * settings.ITEMS_PER_PAGE
-    base_query = "FROM reviews r JOIN users u ON r.user_id = u.id JOIN subcategories sc ON r.subcategory_id = sc.id JOIN categories c ON sc.category_id = c.id WHERE r.status = 'published' AND c.slug = %s"
+    
+    base_query = """
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        JOIN subcategories sc ON r.subcategory_id = sc.id
+        JOIN categories c ON sc.category_id = c.id
+        WHERE r.status = 'published' AND c.slug = %s
+    """
     params = [category_slug]
+    
     if subcategory_slug:
         base_query += " AND sc.slug = %s"
         params.append(subcategory_slug)
-        query = "SELECT sc.*, c.slug as category_slug FROM subcategories sc JOIN categories c ON sc.category_id = c.id WHERE sc.slug=%s AND c.slug=%s"
+        query = """
+            SELECT sc.*, c.slug as category_slug FROM subcategories sc 
+            JOIN categories c ON sc.category_id = c.id 
+            WHERE sc.slug=%s AND c.slug=%s
+        """
         current_category = g.db.fetch_one(query, (subcategory_slug, category_slug))
     else:
         current_category = g.db.fetch_one("SELECT * FROM categories WHERE slug=%s", (category_slug,))
+
     count_query = f"SELECT COUNT(r.id) AS total {base_query}"
     total_items = g.db.fetch_one(count_query, tuple(params))['total']
     total_pages = math.ceil(total_items / settings.ITEMS_PER_PAGE) if total_items > 0 else 0
-    select_query = f"SELECT r.id, r.title, r.what, r.where, r.rating, r.description, r.user_id, u.email as author_email, (SELECT mf.filename FROM media_files mf WHERE mf.review_id = r.id ORDER BY mf.id LIMIT 1) as filename, (SELECT mf.media_type FROM media_files mf WHERE mf.review_id = r.id ORDER BY mf.id LIMIT 1) as media_type {base_query} ORDER BY r.id DESC LIMIT %s OFFSET %s"
+
+    select_query = f"""
+        SELECT r.id, r.title, r.what, r.where, r.rating, r.description, r.user_id, u.email as author_email,
+               (SELECT mf.filename FROM media_files mf WHERE mf.review_id = r.id ORDER BY mf.id LIMIT 1) as filename,
+               (SELECT mf.media_type FROM media_files mf WHERE mf.review_id = r.id ORDER BY mf.id LIMIT 1) as media_type
+        {base_query}
+        ORDER BY r.id DESC
+        LIMIT %s OFFSET %s
+    """
     params.extend([settings.ITEMS_PER_PAGE, offset])
     reviews = g.db.fetch_all(select_query, tuple(params))
-    return render_template("category.html", reviews=reviews, current_page=page, total_pages=total_pages, category=current_category)
+    
+    return render_template("category.html",
+        reviews=reviews, current_page=page, total_pages=total_pages,
+        category=current_category
+    )
 
 @reviews_bp.route("/upload", methods=['GET', 'POST'])
 @login_required
@@ -227,22 +271,54 @@ def handle_upload():
             if cat_data:
                 selected_category_id = cat_data['id']
         return render_template("upload.html", selected_category_id=selected_category_id)
+
     if request.method == 'POST':
         data = request.get_json()
-        if not data: return jsonify({"status": "error", "message": "Invalid JSON payload"}), 400
-        what, where, title, description, subcategory_id, rating, uploaded_files = data.get('what'), data.get('where'), data.get('title'), data.get('description'), data.get('subcategory_id'), data.get('rating'), data.get('objectNames')
-        if not all([what, where, title, description, subcategory_id, rating, uploaded_files]): return jsonify({"status": "error", "message": "Missing required fields"}), 400
-        if not isinstance(uploaded_files, list) or not uploaded_files: return jsonify({"status": "error", "message": "objectNames must be a non-empty list"}), 400
+        if not data:
+            return jsonify({"status": "error", "message": "Invalid JSON payload"}), 400
+
+        what = data.get('what')
+        where = data.get('where')
+        title = data.get('title')
+        description = data.get('description')
+        subcategory_id = data.get('subcategory_id')
+        rating = data.get('rating')
+        uploaded_files = data.get('objectNames')
+
+        if not all([what, where, title, description, subcategory_id, rating, uploaded_files]):
+            return jsonify({"status": "error", "message": "Missing required fields"}), 400
+        
+        if not isinstance(uploaded_files, list) or not uploaded_files:
+            return jsonify({"status": "error", "message": "objectNames must be a non-empty list"}), 400
+
         text_to_check = f"{title} {what} {where} {description}"
         status = 'published' if not check_text_for_stop_words(text_to_check, g.lang) else 'pending_review'
+        
         try:
-            review_query = "INSERT INTO reviews (title, description, subcategory_id, user_id, what, \"where\", rating, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id"
-            new_review_id = g.db.execute_and_fetch_one(review_query, (title, description, subcategory_id, g.user["id"], what, where, rating, status))['id']
+            review_query = """
+                INSERT INTO reviews (title, description, subcategory_id, user_id, what, "where", rating, status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+            """
+            review_params = (title, description, subcategory_id, g.user["id"], what, where, rating, status)
+            new_review = g.db.fetch_one(review_query, review_params)
+            new_review_id = new_review['id']
+
             for file_info in uploaded_files:
-                object_name, media_type = file_info.get('objectName'), file_info.get('mediaType', 'video')
-                if object_name: g.db.execute("INSERT INTO media_files (review_id, filename, media_type) VALUES (%s, %s, %s)", (new_review_id, object_name, media_type))
-            session["flash"] = {"category": "success" if status == 'published' else "info", "message": g.tr.get("review_published_success" if status == 'published' else "review_moderation_pending")}
+                object_name = file_info.get('objectName')
+                media_type = file_info.get('mediaType', 'video')
+                if not object_name:
+                    continue
+                
+                media_query = "INSERT INTO media_files (review_id, filename, media_type) VALUES (%s, %s, %s)"
+                g.db.execute(media_query, (new_review_id, object_name, media_type))
+            
+            if status == 'published':
+                session["flash"] = {"category": "success", "message": g.tr.get("review_published_success")}
+            else:
+                session["flash"] = {"category": "info", "message": g.tr.get("review_moderation_pending")}
+
             return jsonify({"status": "success", "redirectUrl": url_for('pages.home', lang=g.lang)})
+
         except Exception as e:
             logging.error(f"Database error during multi-upload: {e}")
             g.db._connection.rollback()
@@ -253,14 +329,34 @@ def handle_upload():
 def generate_upload_url():
     try:
         data = request.get_json()
-        filename, content_type = data.get("filename"), data.get("contentType")
-        if not filename or not content_type: return jsonify({"error": "Filename and contentType are required"}), 400
-        file_extension = filename.rsplit('.', 1)[1].lower() if '.' in filename else ""
+        filename = data.get("filename")
+        content_type = data.get("contentType")
+
+        if not filename or not content_type:
+            return jsonify({"error": "Filename and contentType are required"}), 400
+
+        file_extension = ""
+        if '.' in filename:
+            file_extension = filename.rsplit('.', 1)[1].lower()
+
         folder = 'images' if 'image' in content_type else 'videos'
         object_name = f"{folder}/{uuid.uuid4()}.{file_extension}"
-        s3_client = boto3.client('s3', endpoint_url=settings.S3_ENDPOINT_URL, aws_access_key_id=settings.AWS_ACCESS_KEY_ID, aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY, region_name="auto")
-        presigned_url = s3_client.generate_presigned_url('put_object', Params={'Bucket': settings.S3_BUCKET_NAME, 'Key': object_name, 'ContentType': content_type}, ExpiresIn=600)
+
+        s3_client = boto3.client(
+            's3', endpoint_url=settings.S3_ENDPOINT_URL,
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            region_name="auto"
+        )
+
+        presigned_url = s3_client.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': settings.S3_BUCKET_NAME, 'Key': object_name, 'ContentType': content_type},
+            ExpiresIn=600
+        )
+
         return jsonify({"url": presigned_url, "objectName": object_name})
+
     except ClientError as e:
         logging.error(f"Error generating presigned URL: {e}")
         return jsonify({"error": "Could not generate upload URL"}), 500
@@ -271,44 +367,102 @@ def generate_upload_url():
 @reviews_bp.route('/review/edit/<int:review_id>', methods=['GET', 'POST'])
 @login_required
 def edit_review(review_id):
-    review = g.db.fetch_one("SELECT r.*, sc.category_id FROM reviews r LEFT JOIN subcategories sc ON r.subcategory_id = sc.id WHERE r.id = %s", (review_id,))
-    if not review or (review['user_id'] != g.user['id'] and not g.user.get('is_admin')): abort(403)
+    query = """
+        SELECT r.*, sc.category_id 
+        FROM reviews r 
+        LEFT JOIN subcategories sc ON r.subcategory_id = sc.id
+        WHERE r.id = %s
+    """
+    review = g.db.fetch_one(query, (review_id,))
+    if not review or (review['user_id'] != g.user['id'] and not g.user.get('is_admin')):
+        abort(403)
+        
     if request.method == 'POST':
-        title, description, what, where, subcategory_id = request.form.get('title'), request.form.get('description'), request.form.get('what'), request.form.get('where'), request.form.get('subcategory_id')
-        g.db.execute("UPDATE reviews SET title = %s, description = %s, what = %s, \"where\" = %s, subcategory_id = %s WHERE id = %s", (title, description, what, where, subcategory_id, review_id))
+        title = request.form.get('title')
+        description = request.form.get('description')
+        what = request.form.get('what')
+        where = request.form.get('where')
+        subcategory_id = request.form.get('subcategory_id')
+        
+        update_query = """
+            UPDATE reviews SET title = %s, description = %s, what = %s, "where" = %s, subcategory_id = %s
+            WHERE id = %s
+        """
+        g.db.execute(update_query, (title, description, what, where, subcategory_id, review_id))
+        
         session["flash"] = {"category": "success", "message": g.tr["review_updated_success"]}
         return redirect(url_for('reviews.view_review_page', review_id=review_id, lang=g.lang))
+    
     media_files = g.db.fetch_all("SELECT id, filename, media_type FROM media_files WHERE review_id = %s ORDER BY id", (review_id,))
-    return render_template('edit_review.html', review=review, media_files=media_files, selected_category_id=review.get('category_id'), selected_subcategory_id=review.get('subcategory_id'))
+    
+    return render_template('edit_review.html', 
+        review=review, 
+        media_files=media_files,
+        selected_category_id=review.get('category_id'),
+        selected_subcategory_id=review.get('subcategory_id')
+    )
 
 @reviews_bp.route("/review/delete/<int:review_id>", methods=['POST'])
 @login_required
 def delete_review(review_id: int):
     lang = session.get('lang', 'en')
     review_data = g.db.fetch_one("SELECT id, user_id FROM reviews WHERE id = %s", (review_id,))
-    if not review_data or (review_data["user_id"] != g.user["id"] and not g.user.get("is_admin")): abort(403)
-    filenames = [mf['filename'] for mf in g.db.fetch_all("SELECT filename FROM media_files WHERE review_id = %s", (review_id,)) if mf.get('filename')]
-    if filenames: delete_s3_objects(filenames)
+
+    if not review_data or (review_data["user_id"] != g.user["id"] and not g.user.get("is_admin")):
+        abort(403)
+
+    media_files_to_delete = g.db.fetch_all("SELECT filename FROM media_files WHERE review_id = %s", (review_id,))
+    filenames = [mf['filename'] for mf in media_files_to_delete if mf.get('filename')]
+    
+    if filenames:
+        delete_s3_objects(filenames)
+    
     g.db.execute("DELETE FROM reviews WHERE id = %s", (review_id,))
     session["flash"] = {"category": "success", "message": g.tr["video_deleted_success"]}
+
     referer = request.headers.get("referer")
-    return redirect(referer if referer and "/admin/" in referer else url_for('users.profile_page', lang=lang))
+    if referer and "/admin/" in referer:
+        return redirect(referer)
+    return redirect(url_for('users.profile_page', lang=lang))
 
 @reviews_bp.route("/media/delete/<int:media_id>", methods=['POST'])
 @login_required
 def delete_media_file(media_id: int):
     media_file = g.db.fetch_one("SELECT mf.filename, r.user_id FROM media_files mf JOIN reviews r ON mf.review_id = r.id WHERE mf.id = %s", (media_id,))
-    if not media_file or (media_file['user_id'] != g.user['id'] and not g.user.get('is_admin')): abort(403)
-    if media_file.get("filename"): delete_s3_objects([media_file["filename"]])
+
+    if not media_file or (media_file['user_id'] != g.user['id'] and not g.user.get('is_admin')):
+        abort(403)
+
+    if media_file.get("filename"):
+        delete_s3_objects([media_file["filename"]])
+
     g.db.execute("DELETE FROM media_files WHERE id = %s", (media_id,))
+    
     return jsonify({"status": "success", "message": "File deleted."})
 
+# --- API для категорий и подкатегорий ---
 @reviews_bp.route("/api/categories")
 def api_get_categories():
-    categories = g.db.fetch_all("SELECT id, name, slug FROM categories ORDER BY name")
-    return jsonify([dict(cat, name=g.tr.get(f"nav_{cat['slug'].replace('-', '_')}", cat['name'])) for cat in categories])
+    query = "SELECT id, name, slug FROM categories ORDER BY name"
+    categories = g.db.fetch_all(query)
+    
+    translated_categories = []
+    for cat in categories:
+        translation_key = 'nav_' + cat['slug'].replace('-', '_')
+        cat['name'] = g.tr.get(translation_key, cat['name'])
+        translated_categories.append(cat)
+        
+    return jsonify(translated_categories)
 
 @reviews_bp.route("/api/subcategories/<int:category_id>")
 def api_get_subcategories(category_id):
-    subcategories = g.db.fetch_all("SELECT id, name, slug FROM subcategories WHERE category_id = %s ORDER BY name", (category_id,))
-    return jsonify([dict(subcat, name=g.tr.get(f"nav_{subcat['slug'].replace('-', '_')}", subcat['name'])) for subcat in subcategories])
+    query = "SELECT id, name, slug FROM subcategories WHERE category_id = %s ORDER BY name"
+    subcategories = g.db.fetch_all(query, (category_id,))
+
+    translated_subcategories = []
+    for subcat in subcategories:
+        translation_key = 'nav_' + subcat['slug'].replace('-', '_')
+        subcat['name'] = g.tr.get(translation_key, subcat['name'])
+        translated_subcategories.append(subcat)
+        
+    return jsonify(translated_subcategories)
