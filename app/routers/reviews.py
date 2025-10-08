@@ -1,4 +1,4 @@
-# Файл: app/routers/reviews.py
+# app/routers/reviews.py
 import os
 import uuid
 import math
@@ -12,16 +12,10 @@ from app.config import settings
 from app.moderation import check_text_for_stop_words
 from app.utils import send_email_notification
 from app.decorators import login_required
-
-# !!! ВАЖНО: Добавлен импорт Pydantic-моделей для email !!!
-# Если ваши модели называются по-другому или находятся в другом файле,
-# исправьте эту строку.
 from app.schemas import NewLikeEmailParams, NewCommentEmailParams
-
 
 reviews_bp = Blueprint('reviews', __name__)
 
-# --- Вспомогательная функция для удаления файлов из S3/R2 ---
 def delete_s3_objects(filenames):
     if not filenames:
         return
@@ -42,11 +36,8 @@ def delete_s3_objects(filenames):
     except Exception as e:
         logging.error(f"Ошибка удаления файлов из R2: {e}")
 
-# --- Ваши существующие функции ---
-
 @reviews_bp.route("/review/<int:review_id>")
 def view_review_page(review_id: int):
-    # Запрос основной информации об отзыве
     query_review = """
         SELECT r.*, u.email as author_email, u.id as author_id,
                sc.name as subcategory_name, sc.slug as subcategory_slug,
@@ -70,7 +61,6 @@ def view_review_page(review_id: int):
     if not is_published and not is_owner and not is_admin:
         return redirect(url_for('pages.home', lang=session.get('lang')))
 
-    # Запрос всех медиа-файлов для этого отзыва
     query_media = "SELECT id, filename, media_type FROM media_files WHERE review_id = %s ORDER BY id"
     media_files_data = g.db.fetch_all(query_media, (review_id,))
     
@@ -154,18 +144,14 @@ def api_handle_like(review_id: int):
         if author_info and author_info["email"] != g.user["email"]:
             review_link = url_for('reviews.view_review_page', review_id=review_id, lang=lang, _external=True)
 
-            # --- ИСПРАВЛЕНИЕ ОШИБКИ EMAIL ---
             try:
-                # 1. Создаем словарь с переменными для шаблона
                 template_vars_dict = {
                     "liker_email": g.user["email"],
                     "review_title": author_info["title"],
                     "review_link": review_link
                 }
-                # 2. Создаем экземпляр Pydantic модели
                 email_params = NewLikeEmailParams(**template_vars_dict)
                 
-                # 3. Передаем объект модели в `template_vars`
                 send_email_notification(
                     recipients=[author_info["email"]], 
                     subject_key="email_new_like_subject",
@@ -174,7 +160,6 @@ def api_handle_like(review_id: int):
                 )
             except Exception as e:
                 logging.error(f"Failed to send 'new like' email notification: {e}")
-            # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
             
     likes_count = g.db.fetch_one("SELECT COUNT(*) AS total FROM likes WHERE review_id = %s", (review_id,))['total']
     return jsonify({"likes_count": likes_count, "user_has_liked": user_has_liked})
@@ -202,19 +187,15 @@ def api_handle_comment(review_id: int):
         if author_info and author_info["email"] != g.user["email"]:
             review_link = url_for('reviews.view_review_page', review_id=review_id, lang=lang, _external=True)
 
-            # --- ИСПРАВЛЕНИЕ ОШИБКИ EMAIL ---
             try:
-                # 1. Создаем словарь с переменными
                 template_vars_dict = {
                     "commenter_email": g.user["email"],
                     "review_title": author_info["title"],
                     "comment_content": content.strip(),
                     "review_link": review_link
                 }
-                # 2. Создаем экземпляр Pydantic модели
                 email_params = NewCommentEmailParams(**template_vars_dict)
 
-                # 3. Передаем объект модели в функцию отправки
                 send_email_notification(
                     recipients=[author_info["email"]], 
                     subject_key="email_new_comment_subject",
@@ -223,7 +204,6 @@ def api_handle_comment(review_id: int):
                 )
             except Exception as e:
                 logging.error(f"Failed to send 'new comment' email notification: {e}")
-            # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
 
         new_comment_data = {
             "id": new_comment_id,
@@ -496,7 +476,6 @@ def delete_media_file(media_id: int):
     
     return jsonify({"status": "success", "message": "File deleted."})
 
-# --- API для категорий и подкатегорий ---
 @reviews_bp.route("/api/categories")
 def api_get_categories():
     query = "SELECT id, name, slug FROM categories ORDER BY name"

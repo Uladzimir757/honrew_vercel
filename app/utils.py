@@ -5,13 +5,12 @@ from mailersend import Email
 from app.config import settings
 from pydantic import BaseModel
 
-# Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def send_email_notification(recipients: list, subject_key: str, body_key: str, template_vars: BaseModel = None):
     """
-    Отправляет email-уведомление с использованием MailerSend.
+    Отправляет email-уведомление. Ожидает Pydantic-модель в template_vars.
     """
     if not isinstance(recipients, list):
         recipients = [recipients]
@@ -20,13 +19,11 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
         subject = g.tr.get(subject_key, "Notification")
         html_body_template = g.tr.get(body_key, "")
         
-        # --- ФИНАЛЬНОЕ ИСПРАВЛЕНИЕ ---
+        # Преобразование Pydantic-объекта в словарь происходит здесь
         if template_vars:
-            # Преобразуем Pydantic-объект в словарь перед форматированием
             html_body = html_body_template.format(**template_vars.model_dump())
         else:
             html_body = html_body_template
-        # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
 
         mailer = Email(settings.MAILERSEND_API_TOKEN)
 
@@ -52,5 +49,4 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
 
     except Exception as e:
         logger.error(f"Failed to send email to {recipients}. Error: {e}")
-        # Передаем исключение дальше, чтобы его поймал вызывающий код
         raise
