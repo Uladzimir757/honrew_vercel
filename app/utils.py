@@ -1,8 +1,9 @@
 # app/utils.py
 import logging
 from flask import g
-from mailersend import Email  # ИСПОЛЬЗУЕМ КЛАСС 'Email', как подсказывала ошибка
+from mailersend import Email
 from app.config import settings
+from pydantic import BaseModel # Добавляем импорт для проверки
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -20,11 +21,19 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
         subject = g.tr.get(subject_key, "Notification")
         html_body_template = g.tr.get(body_key, "")
         
-        # Подставляем переменные в шаблон письма
+        # --- ИЗМЕНЕНИЕ ЗДЕСЬ ---
         if template_vars:
-            html_body = html_body_template.format(**template_vars)
+            # Проверяем, является ли template_vars Pydantic-моделью
+            if isinstance(template_vars, BaseModel):
+                # Если да, преобразуем ее в словарь перед форматированием
+                variables_dict = template_vars.model_dump()
+                html_body = html_body_template.format(**variables_dict)
+            else:
+                # Если это уже словарь, используем его как есть
+                html_body = html_body_template.format(**template_vars)
         else:
             html_body = html_body_template
+        # --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
         # Инициализируем MailerSend
         mailer = Email(settings.MAILERSEND_API_TOKEN)
