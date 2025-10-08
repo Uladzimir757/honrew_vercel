@@ -13,11 +13,9 @@ from app.moderation import check_text_for_stop_words
 from app.utils import send_email_notification
 from app.decorators import login_required
 
-# !!! ВАЖНО: Добавлен импорт Pydantic-моделей для email !!!
-# Если ваши модели называются по-другому или находятся в другом файле,
-# исправьте эту строку.
+# !!! ИСПРАВЛЕНО: Добавлен импорт Pydantic-моделей для email !!!
+# Замените имена моделей, если они отличаются в вашем файле app/schemas.py
 from app.schemas import NewLikeEmailParams, NewCommentEmailParams
-
 
 reviews_bp = Blueprint('reviews', __name__)
 
@@ -154,18 +152,17 @@ def api_handle_like(review_id: int):
         if author_info and author_info["email"] != g.user["email"]:
             review_link = url_for('reviews.view_review_page', review_id=review_id, lang=lang, _external=True)
 
-            # --- ИСПРАВЛЕНИЕ ОШИБКИ EMAIL ---
+            # --- ИСПРАВЛЕНО: Отправка email-уведомления ---
             try:
-                # 1. Создаем словарь с переменными для шаблона
                 template_vars_dict = {
                     "liker_email": g.user["email"],
                     "review_title": author_info["title"],
                     "review_link": review_link
                 }
-                # 2. Создаем экземпляр Pydantic модели
+                # Создаем Pydantic модель
                 email_params = NewLikeEmailParams(**template_vars_dict)
                 
-                # 3. Передаем объект модели в `template_vars`
+                # Передаем объект модели в `template_vars`
                 send_email_notification(
                     recipients=[author_info["email"]], 
                     subject_key="email_new_like_subject",
@@ -202,19 +199,18 @@ def api_handle_comment(review_id: int):
         if author_info and author_info["email"] != g.user["email"]:
             review_link = url_for('reviews.view_review_page', review_id=review_id, lang=lang, _external=True)
 
-            # --- ИСПРАВЛЕНИЕ ОШИБКИ EMAIL ---
+            # --- ИСПРАВЛЕНО: Отправка email-уведомления ---
             try:
-                # 1. Создаем словарь с переменными
                 template_vars_dict = {
                     "commenter_email": g.user["email"],
                     "review_title": author_info["title"],
                     "comment_content": content.strip(),
                     "review_link": review_link
                 }
-                # 2. Создаем экземпляр Pydantic модели
+                # Создаем Pydantic модель
                 email_params = NewCommentEmailParams(**template_vars_dict)
 
-                # 3. Передаем объект модели в функцию отправки
+                # Передаем объект модели в `template_vars`
                 send_email_notification(
                     recipients=[author_info["email"]], 
                     subject_key="email_new_comment_subject",
