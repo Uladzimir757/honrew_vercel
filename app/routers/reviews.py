@@ -13,10 +13,11 @@ from app.moderation import check_text_for_stop_words
 from app.utils import send_email_notification
 from app.decorators import login_required
 
-# !!! ВАЖНО: Добавьте импорт ваших Pydantic-моделей для email !!!
-# Имена `NewLikeEmailParams` и `NewCommentEmailParams` — это предположение.
-# Замените их на реальные имена моделей из вашего файла app/schemas.py
-# Например: from app.schemas import NewLikeEmailParams, NewCommentEmailParams
+# !!! ВАЖНО: Добавлен импорт Pydantic-моделей для email !!!
+# Если ваши модели называются по-другому или находятся в другом файле,
+# исправьте эту строку.
+from app.schemas import NewLikeEmailParams, NewCommentEmailParams
+
 
 reviews_bp = Blueprint('reviews', __name__)
 
@@ -161,15 +162,15 @@ def api_handle_like(review_id: int):
                     "review_title": author_info["title"],
                     "review_link": review_link
                 }
-                # 2. Создаем Pydantic модель (замените NewLikeEmailParams на имя вашей модели)
-                # email_params = NewLikeEmailParams(**template_vars_dict)
+                # 2. Создаем экземпляр Pydantic модели
+                email_params = NewLikeEmailParams(**template_vars_dict)
                 
                 # 3. Передаем объект модели в `template_vars`
                 send_email_notification(
                     recipients=[author_info["email"]], 
                     subject_key="email_new_like_subject",
                     body_key="email_new_like_body",
-                    template_vars=template_vars_dict # ЗАМЕНИТЬ НА `email_params` ПОСЛЕ ИМПОРТА МОДЕЛИ
+                    template_vars=email_params
                 )
             except Exception as e:
                 logging.error(f"Failed to send 'new like' email notification: {e}")
@@ -203,22 +204,22 @@ def api_handle_comment(review_id: int):
 
             # --- ИСПРАВЛЕНИЕ ОШИБКИ EMAIL ---
             try:
-                # 1. Создаем словарь с переменными для шаблона
+                # 1. Создаем словарь с переменными
                 template_vars_dict = {
                     "commenter_email": g.user["email"],
                     "review_title": author_info["title"],
                     "comment_content": content.strip(),
                     "review_link": review_link
                 }
-                # 2. Создаем Pydantic модель (замените NewCommentEmailParams на имя вашей модели)
-                # email_params = NewCommentEmailParams(**template_vars_dict)
+                # 2. Создаем экземпляр Pydantic модели
+                email_params = NewCommentEmailParams(**template_vars_dict)
 
-                # 3. Передаем объект модели в `template_vars`
+                # 3. Передаем объект модели в функцию отправки
                 send_email_notification(
                     recipients=[author_info["email"]], 
                     subject_key="email_new_comment_subject",
                     body_key="email_new_comment_body",
-                    template_vars=template_vars_dict # ЗАМЕНИТЬ НА `email_params` ПОСЛЕ ИМПОРТА МОДЕЛИ
+                    template_vars=email_params
                 )
             except Exception as e:
                 logging.error(f"Failed to send 'new comment' email notification: {e}")
