@@ -1,4 +1,6 @@
 # app/utils.py
+print("--- LOADING UTILS.PY VERSION FINAL ---")
+
 import logging
 from flask import g
 from mailersend import Email
@@ -12,14 +14,17 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
     """
     Отправляет email-уведомление. Ожидает Pydantic-модель в template_vars.
     """
-    if not isinstance(recipients, list):
-        recipients = [recipients]
-
     try:
+        # --- ДИАГНОСТИЧЕСКАЯ СТРОКА ---
+        print(f"DEBUG: Type of template_vars is {type(template_vars)}")
+        # -----------------------------
+
+        if not isinstance(recipients, list):
+            recipients = [recipients]
+
         subject = g.tr.get(subject_key, "Notification")
         html_body_template = g.tr.get(body_key, "")
         
-        # Преобразование Pydantic-объекта в словарь происходит здесь
         if template_vars:
             html_body = html_body_template.format(**template_vars.model_dump())
         else:
@@ -48,5 +53,8 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
         logger.info(f"Email sent successfully to {recipients} with subject '{subject}'")
 
     except Exception as e:
+        # --- ДИАГНОСТИЧЕСКАЯ СТРОКА ---
+        print(f"DEBUG: Error occurred inside send_email_notification: {e}")
+        # -----------------------------
         logger.error(f"Failed to send email to {recipients}. Error: {e}")
         raise
