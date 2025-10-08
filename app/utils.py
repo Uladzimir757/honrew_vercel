@@ -7,9 +7,10 @@ from app.config import settings
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def send_email_notification(recipients: list, subject_key: str, body_key: str, template_vars: dict = None):
+def send_email_notification(recipients: list, subject_key: str, body_key: str, template_vars=None):
     """
-    Отправляет email-уведомление. Всегда ожидает 'template_vars' в виде словаря.
+    Отправляет email-уведомление. 
+    Принимает 'template_vars' как Pydantic-модель или словарь.
     """
     if not isinstance(recipients, list):
         recipients = [recipients]
@@ -18,8 +19,17 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
         subject = g.tr.get(subject_key, "Notification")
         html_body_template = g.tr.get(body_key, "")
         
-        # Этот код теперь простой и ожидает только словарь
-        html_body = html_body_template.format(**template_vars) if template_vars else html_body_template
+        # ИСПРАВЛЕНО: Проверяем тип template_vars и преобразуем в словарь, если нужно
+        vars_dict = {}
+        if template_vars:
+            if hasattr(template_vars, 'model_dump'):
+                # Если это Pydantic-объект, преобразуем его в словарь
+                vars_dict = template_vars.model_dump()
+            elif isinstance(template_vars, dict):
+                # Если это уже словарь, используем его как есть
+                vars_dict = template_vars
+        
+        html_body = html_body_template.format(**vars_dict) if vars_dict else html_body_template
 
         mailer = Email(settings.MAILERSEND_API_TOKEN)
 
@@ -46,3 +56,4 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
     except Exception as e:
         logger.error(f"Failed to send email to {recipients}. Error: {e}")
         raise
+}

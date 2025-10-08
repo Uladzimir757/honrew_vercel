@@ -143,7 +143,7 @@ def api_handle_like(review_id: int):
                     recipients=[author_info["email"]], 
                     subject_key="email_new_like_subject",
                     body_key="email_new_like_body",
-                    template_vars=email_params.model_dump()
+                    template_vars=email_params  # ИСПРАВЛЕНО: Убран .model_dump()
                 )
             except Exception as e:
                 logging.error(f"Failed to send 'new like' email notification: {e}")
@@ -174,7 +174,7 @@ def api_handle_comment(review_id: int):
                     recipients=[author_info["email"]], 
                     subject_key="email_new_comment_subject",
                     body_key="email_new_comment_body",
-                    template_vars=email_params.model_dump()
+                    template_vars=email_params  # ИСПРАВЛЕНО: Убран .model_dump()
                 )
             except Exception as e:
                 logging.error(f"Failed to send 'new comment' email notification: {e}")
