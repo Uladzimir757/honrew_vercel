@@ -13,6 +13,11 @@ from app.moderation import check_text_for_stop_words
 from app.utils import send_email_notification
 from app.decorators import login_required
 
+# !!! ВАЖНО: Добавьте импорт ваших Pydantic-моделей для email !!!
+# Имена `NewLikeEmailParams` и `NewCommentEmailParams` — это предположение.
+# Замените их на реальные имена моделей из вашего файла app/schemas.py
+# Например: from app.schemas import NewLikeEmailParams, NewCommentEmailParams
+
 reviews_bp = Blueprint('reviews', __name__)
 
 # --- Вспомогательная функция для удаления файлов из S3/R2 ---
@@ -147,12 +152,28 @@ def api_handle_like(review_id: int):
         
         if author_info and author_info["email"] != g.user["email"]:
             review_link = url_for('reviews.view_review_page', review_id=review_id, lang=lang, _external=True)
-            send_email_notification(
-                recipients=[author_info["email"]], 
-                subject_key="email_new_like_subject",
-                body_key="email_new_like_body",
-                template_vars={ "liker_email": g.user["email"], "review_title": author_info["title"], "review_link": review_link }
-            )
+
+            # --- ИСПРАВЛЕНИЕ ОШИБКИ EMAIL ---
+            try:
+                # 1. Создаем словарь с переменными для шаблона
+                template_vars_dict = {
+                    "liker_email": g.user["email"],
+                    "review_title": author_info["title"],
+                    "review_link": review_link
+                }
+                # 2. Создаем Pydantic модель (замените NewLikeEmailParams на имя вашей модели)
+                # email_params = NewLikeEmailParams(**template_vars_dict)
+                
+                # 3. Передаем объект модели в `template_vars`
+                send_email_notification(
+                    recipients=[author_info["email"]], 
+                    subject_key="email_new_like_subject",
+                    body_key="email_new_like_body",
+                    template_vars=template_vars_dict # ЗАМЕНИТЬ НА `email_params` ПОСЛЕ ИМПОРТА МОДЕЛИ
+                )
+            except Exception as e:
+                logging.error(f"Failed to send 'new like' email notification: {e}")
+            # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
             
     likes_count = g.db.fetch_one("SELECT COUNT(*) AS total FROM likes WHERE review_id = %s", (review_id,))['total']
     return jsonify({"likes_count": likes_count, "user_has_liked": user_has_liked})
@@ -167,9 +188,11 @@ def api_handle_comment(review_id: int):
     
     status = 'published' if not check_text_for_stop_words(content, g.lang) else 'pending_review'
     
-    query = "INSERT INTO comments (content, review_id, user_id, status) VALUES (%s, %s, %s, %s) RETURNING id"
+    query = "INSERT INTO comments (content, review_id, user_id, status) VALUES (%s, %s, %s, %s) RETURNING id, created_at"
     new_comment_row = g.db.execute_and_fetch_one(query, (content.strip(), review_id, g.user["id"], status))
     new_comment_id = new_comment_row['id']
+    new_comment_created_at = new_comment_row['created_at'].strftime('%Y-%m-%d %H:%M')
+
 
     if status == 'published':
         author_info_query = "SELECT u.email, r.title FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.id = %s"
@@ -177,23 +200,36 @@ def api_handle_comment(review_id: int):
         
         if author_info and author_info["email"] != g.user["email"]:
             review_link = url_for('reviews.view_review_page', review_id=review_id, lang=lang, _external=True)
-            send_email_notification(
-                recipients=[author_info["email"]], 
-                subject_key="email_new_comment_subject",
-                body_key="email_new_comment_body",
-                template_vars={
+
+            # --- ИСПРАВЛЕНИЕ ОШИБКИ EMAIL ---
+            try:
+                # 1. Создаем словарь с переменными для шаблона
+                template_vars_dict = {
                     "commenter_email": g.user["email"],
                     "review_title": author_info["title"],
                     "comment_content": content.strip(),
                     "review_link": review_link
                 }
-            )
+                # 2. Создаем Pydantic модель (замените NewCommentEmailParams на имя вашей модели)
+                # email_params = NewCommentEmailParams(**template_vars_dict)
+
+                # 3. Передаем объект модели в `template_vars`
+                send_email_notification(
+                    recipients=[author_info["email"]], 
+                    subject_key="email_new_comment_subject",
+                    body_key="email_new_comment_body",
+                    template_vars=template_vars_dict # ЗАМЕНИТЬ НА `email_params` ПОСЛЕ ИМПОРТА МОДЕЛИ
+                )
+            except Exception as e:
+                logging.error(f"Failed to send 'new comment' email notification: {e}")
+            # --- КОНЕЦ ИСПРАВЛЕНИЯ ---
 
         new_comment_data = {
             "id": new_comment_id,
             "content": content.strip(),
             "author_email": g.user["email"],
-            "author_id": g.user["id"]
+            "author_id": g.user["id"],
+            "created_at": new_comment_created_at
         }
         return jsonify({
             "status": "success", 
