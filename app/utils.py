@@ -11,19 +11,19 @@ logger = logging.getLogger(__name__)
 def send_email_notification(recipients: list, subject_key: str, body_key: str, template_vars: dict = None):
     """
     Отправляет email-уведомление с использованием MailerSend.
-    Теперь всегда ожидает `template_vars` в виде словаря.
     """
-    if not isinstance(recipients, list):
-        recipients = [recipients]
-
     try:
+        # --- ДИАГНОСТИЧЕСКАЯ СТРОКА ---
+        print(f"DEBUG: Type of template_vars is {type(template_vars)}")
+        # -----------------------------
+
+        if not isinstance(recipients, list):
+            recipients = [recipients]
+
         subject = g.tr.get(subject_key, "Notification")
         html_body_template = g.tr.get(body_key, "")
         
-        # --- УПРОЩЕНО ---
-        # Просто форматируем строку, так как теперь мы уверены, что template_vars - это словарь
         html_body = html_body_template.format(**template_vars) if template_vars else html_body_template
-        # --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
         mailer = Email(settings.MAILERSEND_API_TOKEN)
 
@@ -48,4 +48,9 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
         logger.info(f"Email sent successfully to {recipients} with subject '{subject}'")
 
     except Exception as e:
+        # --- ДИАГНОСТИЧЕСКАЯ СТРОКА ---
+        print(f"DEBUG: Error occurred inside send_email_notification: {e}")
+        # -----------------------------
         logger.error(f"Failed to send email to {recipients}. Error: {e}")
+        # Передаем исключение дальше, чтобы его поймал вызывающий код
+        raise
