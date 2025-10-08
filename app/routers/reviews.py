@@ -12,10 +12,10 @@ from app.config import settings
 from app.moderation import check_text_for_stop_words
 from app.utils import send_email_notification
 from app.decorators import login_required
+from app.schemas import NewLikeEmailParams, NewCommentEmailParams
 
 reviews_bp = Blueprint('reviews', __name__)
 
-# --- Вспомогательная функция для удаления файлов из S3/R2 ---
 def delete_s3_objects(filenames):
     if not filenames:
         return
@@ -36,11 +36,8 @@ def delete_s3_objects(filenames):
     except Exception as e:
         logging.error(f"Ошибка удаления файлов из R2: {e}")
 
-# --- Ваши существующие функции ---
-
 @reviews_bp.route("/review/<int:review_id>")
 def view_review_page(review_id: int):
-    # Запрос основной информации об отзыве
     query_review = """
         SELECT r.*, u.email as author_email, u.id as author_id,
                sc.name as subcategory_name, sc.slug as subcategory_slug,
@@ -64,7 +61,6 @@ def view_review_page(review_id: int):
     if not is_published and not is_owner and not is_admin:
         return redirect(url_for('pages.home', lang=session.get('lang')))
 
-    # Запрос всех медиа-файлов для этого отзыва
     query_media = "SELECT id, filename, media_type FROM media_files WHERE review_id = %s ORDER BY id"
     media_files_data = g.db.fetch_all(query_media, (review_id,))
     
@@ -148,11 +144,16 @@ def api_handle_like(review_id: int):
         if author_info and author_info["email"] != g.user["email"]:
             review_link = url_for('reviews.view_review_page', review_id=review_id, lang=lang, _external=True)
             try:
+                email_params = NewLikeEmailParams(
+                    liker_email=g.user["email"],
+                    review_title=author_info["title"],
+                    review_link=review_link
+                )
                 send_email_notification(
                     recipients=[author_info["email"]], 
                     subject_key="email_new_like_subject",
                     body_key="email_new_like_body",
-                    template_vars={ "liker_email": g.user["email"], "review_title": author_info["title"], "review_link": review_link }
+                    template_vars=email_params
                 )
             except Exception as e:
                 logging.error(f"Failed to send 'new like' email notification: {e}")
@@ -177,27 +178,26 @@ def api_handle_comment(review_id: int):
     new_comment_created_at = new_comment_row['created_at'].strftime('%Y-%m-%d %H:%M')
 
     if status == 'published':
-        # --- НАЧАЛО ВОССТАНОВЛЕННОГО БЛОКА ---
         author_info_query = "SELECT u.email, r.title FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.id = %s"
         author_info = g.db.fetch_one(author_info_query, (review_id,))
         
         if author_info and author_info["email"] != g.user["email"]:
             review_link = url_for('reviews.view_review_page', review_id=review_id, lang=lang, _external=True)
             try:
+                email_params = NewCommentEmailParams(
+                    commenter_email=g.user["email"],
+                    review_title=author_info["title"],
+                    comment_content=content.strip(),
+                    review_link=review_link
+                )
                 send_email_notification(
                     recipients=[author_info["email"]], 
                     subject_key="email_new_comment_subject",
                     body_key="email_new_comment_body",
-                    template_vars={
-                        "commenter_email": g.user["email"], 
-                        "review_title": author_info["title"], 
-                        "comment_content": content.strip(), 
-                        "review_link": review_link
-                    }
+                    template_vars=email_params
                 )
             except Exception as e:
                 logging.error(f"Failed to send 'new comment' email notification: {e}")
-        # --- КОНЕЦ ВОССТАНОВЛЕННОГО БЛОКА ---
 
         new_comment_data = {
             "id": new_comment_id, 
