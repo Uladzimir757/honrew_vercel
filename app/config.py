@@ -1,15 +1,26 @@
 # app/config.py
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Optional
 
 class Settings(BaseSettings):
-    # Наши новые переменные
+    # Базы данных
     PROD_DATABASE_URL: str
     PREVIEW_DATABASE_URL: str
     
-    # Настройки почты (MailerSend)
-    MAILERSEND_API_TOKEN: str
-    MAIL_FROM_EMAIL: str
+    # --- ДОБАВЛЕННЫЙ БЛОК: Настройки для SMTP (Gmail) ---
+    MAIL_SERVER: str
+    MAIL_PORT: int
+    MAIL_USERNAME: str
+    MAIL_PASSWORD: str
+    MAIL_FROM: str
+    MAIL_STARTTLS: bool = False
+    MAIL_SSL_TLS: bool = True
+    # --- КОНЕЦ БЛОКА ---
+
+    # Старые настройки почты (MailerSend) - сделаны необязательными
+    MAILERSEND_API_TOKEN: Optional[str] = None
+    MAIL_FROM_EMAIL: Optional[str] = None
     
     # Настройки безопасности
     SECRET_KEY: str
@@ -33,11 +44,10 @@ class Settings(BaseSettings):
         else:
             return self.PREVIEW_DATABASE_URL
 
-    # --- ИЗМЕНЕНИЕ: Добавлена одна строка `extra='ignore'` ---
     model_config = SettingsConfigDict(
         env_file=".env", 
         env_file_encoding='utf-8',
-        extra='ignore'  # Эта строка говорит Pydantic игнорировать лишние переменные
+        extra='ignore'
     )
 
 settings = Settings()
