@@ -1,6 +1,7 @@
 # Файл: app/utils.py
 
 import logging
+import MailerSend ,  EmailParams ,  Sender ,  Recipient
 from flask import g
 # Импортируем новые классы из библиотеки
 from mailersend import MailerSend
