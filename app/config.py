@@ -8,19 +8,14 @@ class Settings(BaseSettings):
     PROD_DATABASE_URL: str
     PREVIEW_DATABASE_URL: str
     
-    # --- ДОБАВЛЕННЫЙ БЛОК: Настройки для SMTP (Gmail) ---
+    # --- Настройки для SMTP (Gmail) ---
     MAIL_SERVER: str
     MAIL_PORT: int
     MAIL_USERNAME: str
     MAIL_PASSWORD: str
     MAIL_FROM: str
-    MAIL_STARTTLS: bool = False
-    MAIL_SSL_TLS: bool = True
-    # --- КОНЕЦ БЛОКА ---
-
-    # Старые настройки почты (MailerSend) - сделаны необязательными
-    MAILERSEND_API_TOKEN: Optional[str] = None
-    MAIL_FROM_EMAIL: Optional[str] = None
+    MAIL_STARTTLS: bool = True
+    MAIL_SSL_TLS: bool = False
     
     # Настройки безопасности
     SECRET_KEY: str
