@@ -53,7 +53,7 @@ pip_audit==2.9.0
 platformdirs==4.4.0
 pluggy==1.6.0
 propcache==0.3.2
-psycopg2==2.9.10
+psycopg2-binary==2.9.10
 py-serializable==2.1.0
 pydantic==2.11.7
 pydantic-settings==2.10.1
