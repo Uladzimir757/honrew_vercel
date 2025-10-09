@@ -2,8 +2,8 @@
 
 import logging
 from flask import g
-# Используем старый импорт
-from mailersend import Email 
+# ПРАВИЛЬНЫЙ ИМПОРТ ДЛЯ СТАРОЙ ВЕРСИИ
+from mailersend.emails import Emails
 from app.config import settings
 
 logging.basicConfig(level=logging.INFO)
@@ -22,23 +22,21 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
         recipients = [recipients]
 
     try:
-        # Старая инициализация клиента
-        mailer = Email(settings.MAILERSEND_API_TOKEN)
+        # ПРАВИЛЬНЫЙ КЛАСС ДЛЯ СТАРОЙ ВЕРСИИ
+        mailer = Emails(settings.MAILERSEND_API_TOKEN)
 
         subject = g.tr.get(subject_key, "Notification")
         body_template = g.tr.get(body_key, "")
-        
-        # Код форматирования остается тем же, он работает со словарем
+
         html_body = body_template.format(**template_vars) if template_vars else body_template
-        
+
         mail_from = {
             "email": settings.MAIL_FROM_EMAIL,
             "name": "Honest Reviews" 
         }
-        
+
         recipients_list = [{"email": recipient} for recipient in recipients]
 
-        # Старая версия библиотеки принимает на вход простой словарь
         mail_data = {
             "from": mail_from,
             "to": recipients_list,
@@ -46,8 +44,7 @@ def send_email_notification(recipients: list, subject_key: str, body_key: str, t
             "html": html_body,
             "text": "This is a plain text version of the email."
         }
-        
-        # Метод send() вызывается у объекта Email и принимает словарь
+
         mailer.send(mail_data)
         logger.info(f"Email sent successfully to {recipients} via MailerSend")
 
