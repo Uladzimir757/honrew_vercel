@@ -8,14 +8,9 @@ class Settings(BaseSettings):
     PROD_DATABASE_URL: str
     PREVIEW_DATABASE_URL: str
     
-    # --- Настройки для SMTP (Gmail) ---
-    MAIL_SERVER: str
-    MAIL_PORT: int
-    MAIL_USERNAME: str
-    MAIL_PASSWORD: str
-    MAIL_FROM: str
-    MAIL_STARTTLS: bool = True
-    MAIL_SSL_TLS: bool = False
+    # Настройки почты (MailerSend)
+    MAILERSEND_API_TOKEN: str
+    MAIL_FROM: str  # ИЗМЕНЕНО: Используем MAIL_FROM, как в ваших настройках Vercel
     
     # Настройки безопасности
     SECRET_KEY: str
