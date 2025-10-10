@@ -1,60 +1,52 @@
 # Файл: app/utils.py
 
 import logging
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from flask import g
 from app.config import settings
+
+# Правильные импорты для mailersend v2.0.0
+from mailersend import MailerSendClient
+from mailersend.models.email import EmailContact, EmailRequest
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def send_email_notification(recipients: list, subject_key: str, body_key: str, template_vars: dict):
     """
-    Отправляет email напрямую через SMTP, автоматически выбирая SSL или STARTTLS.
+    Отправляет email, используя API MailerSend (v2.0.0).
     """
-    if not all([settings.MAIL_SERVER, settings.MAIL_PORT, settings.MAIL_USERNAME, settings.MAIL_PASSWORD]):
-        logger.error("SMTP settings (MAIL_...) are not configured. Cannot send email.")
+    if not settings.MAILERSEND_API_TOKEN:
+        logger.error("MAILERSEND_API_TOKEN is not set. Cannot send email.")
         return
 
     if not isinstance(recipients, list):
         recipients = [recipients]
 
     try:
+        # Инициализируем клиент
+        mailer = MailerSendClient(settings.MAILERSEND_API_TOKEN)
+
+        # Формируем тему и тело письма
         subject = g.tr.get(subject_key, "Notification")
         body_template = g.tr.get(body_key, "")
         html_body = body_template.format(**template_vars) if template_vars else body_template
 
-        message = MIMEMultipart("alternative")
-        message["Subject"] = subject
-        message["From"] = settings.MAIL_FROM
-        message["To"] = ", ".join(recipients)
+        # Собираем Pydantic-объект для отправки
+        from_contact = EmailContact(email=settings.MAIL_FROM, name="Honest Reviews")
+        to_contacts = [EmailContact(email=recipient) for recipient in recipients]
 
-        part = MIMEText(html_body, "html")
-        message.attach(part)
+        email_request = EmailRequest(
+            from_email=from_contact,
+            to=to_contacts,
+            subject=subject,
+            html=html_body,
+            text="This is a plain text version of the email." # Запасной текстовый вариант
+        )
 
-        # --- ИЗМЕНЕННАЯ ЛОГИКА ПОДКЛЮЧЕНИЯ ---
-        if settings.MAIL_SSL_TLS:
-            # Используем неявный SSL/TLS (обычно для порта 465)
-            with smtplib.SMTP_SSL(settings.MAIL_SERVER, settings.MAIL_PORT) as server:
-                server.login(settings.MAIL_USERNAME, settings.MAIL_PASSWORD)
-                server.sendmail(
-                    settings.MAIL_FROM, recipients, message.as_string()
-                )
-        else:
-            # Используем явный STARTTLS (обычно для порта 587)
-            with smtplib.SMTP(settings.MAIL_SERVER, settings.MAIL_PORT) as server:
-                if settings.MAIL_STARTTLS:
-                    server.starttls()
-                server.login(settings.MAIL_USERNAME, settings.MAIL_PASSWORD)
-                server.sendmail(
-                    settings.MAIL_FROM, recipients, message.as_string()
-                )
-        # --- КОНЕЦ ИЗМЕНЕННОЙ ЛОГИКИ ---
-
-        logger.info(f"Email sent successfully to {recipients} via SMTP.")
+        # Отправляем письмо
+        response = mailer.emails.send(email_request)
+        logger.info(f"Email sent successfully to {recipients}. Response status: {response.status_code}")
 
     except Exception as e:
-        logger.error(f"Failed to send email via SMTP. Error: {e}")
+        logger.error(f"Failed to send email to {recipients} via MailerSend. Error: {e}")
         raise
