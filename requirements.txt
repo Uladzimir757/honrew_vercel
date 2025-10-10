@@ -20,7 +20,6 @@ db-to-sqlite==1.5
 defusedxml==0.7.1
 dnspython==2.7.0
 email-validator==2.3.0
-fastapi==0.116.1
 ffmpeg-python==0.2.0
 filelock==3.19.1
 Flask==3.1.2
