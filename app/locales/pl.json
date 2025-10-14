@@ -287,5 +287,16 @@
     "nav_pokupka_prodazha": "Kupno/Sprzedaż",
     "nav_byuti_industriya": "Branża beauty",
     "nav_remont_tekhniki": "Naprawa sprzętu",
-    "nav_yuridicheskie_uslugi": "Usługi prawne"
+    "nav_yuridicheskie_uslugi": "Usługi prawne",
+    "admin_edit_category_title": "Edycja kategorii",
+    "admin_edit_category_header": "Edytujesz",
+    "admin_category_name": "Nazwa",
+    "admin_category_slug": "Slug (uproszczona nazwa)",
+    "admin_category_parent": "Kategoria nadrzędna",
+    "admin_action_cancel": "Anuluj",
+    "admin_save_changes_button": "Zapisz zmiany",
+    "admin_category_added_success": "Kategoria została pomyślnie dodana.",
+    "admin_category_updated_success": "Kategoria została pomyślnie zaktualizowana.",
+    "admin_category_deleted_success": "Kategoria została usunięta."
+
 }

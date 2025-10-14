@@ -286,5 +286,15 @@
     "nav_pokupka_prodazha": "Покупка/Продажа",
     "nav_byuti_industriya": "Бьюти индустрия",
     "nav_remont_tekhniki": "Ремонт техники",
-    "nav_yuridicheskie_uslugi": "Юридические услуги"
+    "nav_yuridicheskie_uslugi": "Юридические услуги",
+    "admin_edit_category_title": "Редактирование категории",
+    "admin_edit_category_header": "Редактирование",
+    "admin_category_name": "Название",
+    "admin_category_slug": "Слаг (slug)",
+    "admin_category_parent": "Родительская категория",
+    "admin_action_cancel": "Отмена",
+    "admin_save_changes_button": "Сохранить изменения",
+    "admin_category_added_success": "Категория успешно добавлена.",
+    "admin_category_updated_success": "Категория успешно обновлена.",
+    "admin_category_deleted_success": "Категория удалена."
 }

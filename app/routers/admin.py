@@ -125,30 +125,44 @@ def manage_categories():
         else: 
             g.db.execute("INSERT INTO categories (name, slug) VALUES (%s, %s)", (name, slug))
         
-        session['flash'] = {'category': 'success', 'message': 'Категория добавлена.'}
+        session['flash'] = {'category': 'success', 'message': g.tr.get('admin_category_added_success', 'Категория добавлена.')}
         return redirect(url_for('admin.manage_categories'))
 
+    # --- ИЗМЕНЕНО: Оптимизированная логика для GET-запроса ---
+    # 1. Получаем все основные категории (1-й запрос)
     main_categories = g.db.fetch_all("SELECT id, name FROM categories ORDER BY name")
     
+    # 2. Получаем ВСЕ подкатегории одним запросом (2-й запрос)
+    all_subcategories = g.db.fetch_all(
+        "SELECT id, name, slug, category_id FROM subcategories ORDER BY name"
+    )
+    
+    # 3. Группируем подкатегории по их родительской категории (в памяти Python)
+    subcategories_by_parent = {}
+    for subcat in all_subcategories:
+        parent_id = subcat['category_id']
+        if parent_id not in subcategories_by_parent:
+            subcategories_by_parent[parent_id] = []
+        subcategories_by_parent[parent_id].append(subcat)
+
+    # 4. Собираем итоговую структуру без дополнительных запросов в цикле
     categories_tree = []
     for cat in main_categories:
-        subcategories = g.db.fetch_all(
-            "SELECT id, name, slug FROM subcategories WHERE category_id = %s ORDER BY name", (cat['id'],)
-        )
+        subcategories = subcategories_by_parent.get(cat['id'], [])
         categories_tree.append({'data': cat, 'subcategories': subcategories})
+    # --- КОНЕЦ ИЗМЕНЕНИЙ ---
 
     return render_template('admin/categories.html',
                            categories_tree=categories_tree,
                            main_categories=main_categories)
 
+
 @admin_bp.route('/categories/edit/<int:category_id>', methods=['GET', 'POST'])
 @admin_required
 def edit_category(category_id):
-    # Сначала ищем в подкатегориях
     item = g.db.fetch_one("SELECT * FROM subcategories WHERE id = %s", (category_id,))
     is_subcategory = True
     if not item:
-        # Если не нашли, ищем в основных категориях
         item = g.db.fetch_one("SELECT * FROM categories WHERE id = %s", (category_id,))
         is_subcategory = False
 
@@ -161,18 +175,15 @@ def edit_category(category_id):
         parent_id = request.form.get('parent_id')
         
         if is_subcategory:
-            # Обновляем подкатегорию
             query = "UPDATE subcategories SET name = %s, slug = %s, category_id = %s WHERE id = %s"
             g.db.execute(query, (name, slug, int(parent_id) if parent_id else None, category_id))
         else:
-            # Обновляем основную категорию
             query = "UPDATE categories SET name = %s, slug = %s WHERE id = %s"
             g.db.execute(query, (name, slug, category_id))
         
-        session['flash'] = {'category': 'success', 'message': 'Категория успешно обновлена.'}
+        session['flash'] = {'category': 'success', 'message': g.tr.get('admin_category_updated_success', 'Категория успешно обновлена.')}
         return redirect(url_for('admin.manage_categories'))
 
-    # Для GET-запроса получаем список всех основных категорий для выпадающего меню
     main_categories = g.db.fetch_all("SELECT id, name FROM categories ORDER BY name")
     return render_template('admin/edit_category.html', 
                            item=item, 
@@ -185,7 +196,7 @@ def delete_category(category_id):
     g.db.execute("DELETE FROM subcategories WHERE id = %s", (category_id,))
     g.db.execute("DELETE FROM categories WHERE id = %s", (category_id,))
     
-    session['flash'] = {'category': 'success', 'message': 'Категория удалена.'}
+    session['flash'] = {'category': 'success', 'message': g.tr.get('admin_category_deleted_success', 'Категория удалена.')}
     return redirect(url_for('admin.manage_categories'))
 
 @admin_bp.route('/complaints')

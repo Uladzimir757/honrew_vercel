@@ -1,23 +1,23 @@
 {% extends "admin/base.html" %}
 
-{% block title %}Редактирование категории{% endblock %}
-{% block header %}Редактирование: {{ item.name }}{% endblock %}
+{% block title %}{{ tr.admin_edit_category_title }}{% endblock %}
+{% block header %}{{ tr.admin_edit_category_header }}: {{ item.name }}{% endblock %}
 
 {% block admin_content %}
 <div class="max-w-xl mx-auto bg-slate-800 rounded-lg shadow p-6">
     <form method="POST" action="{{ url_for('admin.edit_category', category_id=item.id) }}" class="space-y-4">
         <div>
-            <label for="name" class="block text-sm font-medium text-gray-300">Название</label>
+            <label for="name" class="block text-sm font-medium text-gray-300">{{ tr.admin_category_name }}</label>
             <input type="text" name="name" id="name" value="{{ item.name }}" required class="mt-1 block w-full bg-slate-700 border-slate-600 rounded-md shadow-sm text-white focus:ring-blue-500 focus:border-blue-500">
         </div>
         <div>
-            <label for="slug" class="block text-sm font-medium text-gray-300">Слаг (slug)</label>
+            <label for="slug" class="block text-sm font-medium text-gray-300">{{ tr.admin_category_slug }}</label>
             <input type="text" name="slug" id="slug" value="{{ item.slug }}" required class="mt-1 block w-full bg-slate-700 border-slate-600 rounded-md shadow-sm text-white focus:ring-blue-500 focus:border-blue-500">
         </div>
         
         {% if is_subcategory %}
         <div>
-            <label for="parent_id" class="block text-sm font-medium text-gray-300">Родительская категория</label>
+            <label for="parent_id" class="block text-sm font-medium text-gray-300">{{ tr.admin_category_parent }}</label>
             <select name="parent_id" id="parent_id" required class="mt-1 block w-full bg-slate-700 border-slate-600 rounded-md shadow-sm text-white focus:ring-blue-500 focus:border-blue-500">
                 {% for cat in main_categories %}
                 <option value="{{ cat.id }}" {% if cat.id == item.category_id %}selected{% endif %}>{{ cat.name }}</option>
@@ -27,9 +27,9 @@
         {% endif %}
 
         <div class="flex justify-end space-x-4 pt-4">
-            <a href="{{ url_for('admin.manage_categories') }}" class="px-4 py-2 bg-slate-600 text-white rounded-md hover:bg-slate-500">Отмена</a>
+            <a href="{{ url_for('admin.manage_categories') }}" class="px-4 py-2 bg-slate-600 text-white rounded-md hover:bg-slate-500">{{ tr.admin_action_cancel }}</a>
             <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                Сохранить изменения
+                {{ tr.admin_save_changes_button }}
             </button>
         </div>
     </form>

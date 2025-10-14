@@ -287,6 +287,17 @@
     "nav_pokupka_prodazha": "Buying/Selling",
     "nav_byuti_industriya": "Beauty Industry",
     "nav_remont_tekhniki": "Appliance Repair",
-    "nav_yuridicheskie_uslugi": "Legal Services"
+    "nav_yuridicheskie_uslugi": "Legal Services",
+    "admin_edit_category_title": "Edit Category",
+    "admin_edit_category_header": "Editing",
+    "admin_category_name": "Name",
+    "admin_category_slug": "Slug",
+    "admin_category_parent": "Parent Category",
+    "admin_action_cancel": "Cancel",
+    "admin_save_changes_button": "Save Changes",
+    "admin_category_added_success": "Category added successfully.",
+    "admin_category_updated_success": "Category updated successfully.",
+    "admin_category_deleted_success": "Category has been deleted."
+
    
 }
