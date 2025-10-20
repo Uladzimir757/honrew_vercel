@@ -30,7 +30,6 @@ class PostgresManager:
             conn.commit()
             return cursor
 
-    # НОВЫЙ МЕТОД ДЛЯ INSERT/UPDATE С ВОЗВРАТОМ ДАННЫХ
     def execute_and_fetch_one(self, query, params=None):
         conn = self._get_connection()
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -60,13 +59,13 @@ def get_app():
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     static_folder_path = os.path.join(project_root, 'static')
 
-    app = Flask(__name__, 
-                static_folder=static_folder_path, 
+    app = Flask(__name__,
+                static_folder=static_folder_path,
                 static_url_path='/static',
                 template_folder='templates')
 
     app.secret_key = settings.SECRET_KEY
-    
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(pages_bp)
     app.register_blueprint(reviews_bp)
@@ -76,10 +75,32 @@ def get_app():
     @app.before_request
     def before_request_handler():
         g.db = PostgresManager(settings.DATABASE_URL)
-        
-        lang = request.args.get('lang', session.get('lang', 'ru'))
-        if lang not in ['en', 'ru', 'pl']:
-            lang = 'ru'
+
+        supported_langs = ['en', 'ru', 'pl']
+        default_lang = 'en'  # --- Английский по умолчанию ---
+
+        # 1. Проверяем параметр URL
+        lang = request.args.get('lang')
+
+        # 2. Если в URL нет, проверяем сессию
+        if lang is None:
+            lang = session.get('lang')
+
+        # 3. Если и в сессии нет, пытаемся определить по заголовкам браузера
+        if lang is None:
+            # request.accept_languages возвращает предпочтения браузера
+            # best_match выбирает лучший поддерживаемый язык из списка supported_langs
+            lang = request.accept_languages.best_match(supported_langs)
+
+        # 4. Если определить не удалось (браузер предложил неподдерживаемый язык), используем английский
+        if lang is None:
+            lang = default_lang
+
+        # 5. Финальная проверка: если язык все еще невалидный
+        if lang not in supported_langs:
+            lang = default_lang
+
+        # Сохраняем язык в сессию и g
         session['lang'] = lang
         g.lang = lang
 
@@ -88,8 +109,14 @@ def get_app():
             with open(translations_path, 'r', encoding='utf-8') as f:
                 g.tr = json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
-            g.tr = {}
-        
+            # Если файл перевода не найден, загружаем английский как запасной
+            try:
+                 fallback_path = os.path.join(app.root_path, 'locales', f'{default_lang}.json')
+                 with open(fallback_path, 'r', encoding='utf-8') as f:
+                     g.tr = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                 g.tr = {} # Оставляем пустым, если даже английский не найден
+
         g.user = get_current_user()
         g.flash = session.pop('flash', None)
 
@@ -105,20 +132,28 @@ def get_app():
         user = g.get('user')
         if user and user.get('is_admin'):
             try:
-                count_result = g.db.fetch_one(
-                    "SELECT COUNT(*) as count FROM complaints WHERE status = 'pending'"
-                )
-                if count_result:
-                    pending_complaints_count = count_result['count']
+                # Используем базу данных из g, которая будет закрыта в teardown_request
+                db = g.get('db')
+                if db:
+                    count_result = db.fetch_one(
+                        "SELECT COUNT(*) as count FROM complaints WHERE status = 'pending'"
+                    )
+                    if count_result:
+                        pending_complaints_count = count_result['count']
             except Exception as e:
-                print(f"Error counting complaints: {e}")
-                pending_complaints_count = 0
+                # Используем logger для записи ошибки
+                app.logger.error(f"Error counting complaints: {e}")
+                pending_complaints_count = 0 # Безопасное значение по умолчанию
 
         categories_nav = []
         try:
-            categories_nav = g.db.fetch_all("SELECT name, slug FROM categories ORDER BY name")
+            # Используем базу данных из g
+            db = g.get('db')
+            if db:
+                 categories_nav = db.fetch_all("SELECT name, slug FROM categories ORDER BY name")
         except Exception as e:
-            print(f"Error fetching categories for navbar: {e}")
+             app.logger.error(f"Error fetching categories for navbar: {e}")
+             # Оставляем categories_nav пустым списком
 
         return {
             'user': user,
@@ -131,5 +166,13 @@ def get_app():
         }
     return app
 
-if __name__ != "__main__":
+# Этот блок гарантирует, что при прямом запуске файла app создается
+# Но при импорте из index.py (как делает Vercel), используется уже созданный app
+if __name__ == "__main__":
+    # Локальный запуск для отладки
+    # Не будет выполняться на Vercel
+    local_app = get_app()
+    local_app.run(debug=True, port=8080)
+elif __name__ != "__main__":
+    # Этот блок выполняется при импорте, например, Vercel
     app = get_app()
