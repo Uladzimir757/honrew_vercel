@@ -296,5 +296,7 @@
     "admin_save_changes_button": "Сохранить изменения",
     "admin_category_added_success": "Категория успешно добавлена.",
     "admin_category_updated_success": "Категория успешно обновлена.",
-    "admin_category_deleted_success": "Категория удалена."
+    "admin_category_deleted_success": "Категория удалена.",
+    "nav_kazino": "Казино",
+    "nav_food": "Еда"
 }

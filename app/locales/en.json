@@ -277,7 +277,6 @@
     "comment_published_success": "Your comment has been published.",
     "admin_comment_approved": "Comment approved and published.",
     "admin_comment_rejected": "Comment rejected.",
-    "nav_food": "Food",
     "nav_avtodilery": "Car Dealers",
     "nav_avtoservisy": "Car Services",
     "nav_dostavka_edy": "Food Delivery",
@@ -297,7 +296,10 @@
     "admin_save_changes_button": "Save Changes",
     "admin_category_added_success": "Category added successfully.",
     "admin_category_updated_success": "Category updated successfully.",
-    "admin_category_deleted_success": "Category has been deleted."
+    "admin_category_deleted_success": "Category has been deleted.",
+    "nav_beauty_industry": "Beauty Industry",
+    "nav_casinos": "Casinos",
+    "nav_food": "Food"
 
    
 }

@@ -277,7 +277,6 @@
     "comment_published_success": "Twój komentarz został opublikowany.",
     "admin_comment_approved": "Komentarz zatwierdzony i opublikowany.",
     "admin_comment_rejected": "Komentarz odrzucony.",
-    "nav_food": "Jedzenie",
     "nav_avtodilery": "Dealerzy samochodowi",
     "nav_avtoservisy": "Serwisy samochodowe",
     "nav_dostavka_edy": "Dostawa jedzenia",
@@ -297,6 +296,9 @@
     "admin_save_changes_button": "Zapisz zmiany",
     "admin_category_added_success": "Kategoria została pomyślnie dodana.",
     "admin_category_updated_success": "Kategoria została pomyślnie zaktualizowana.",
-    "admin_category_deleted_success": "Kategoria została usunięta."
+    "admin_category_deleted_success": "Kategoria została usunięta.",
+    "nav_branza_beauty": "Branża beauty",
+    "nav_kasyna": "Kasyna",
+    "nav_food": "Jedzenie" 
 
 }
