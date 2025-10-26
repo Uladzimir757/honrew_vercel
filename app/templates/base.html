@@ -145,10 +145,17 @@
         <script defer src="https://cdn.jsdelivr.net/npm/klaro@0.7.15/dist/klaro.min.js"></script>
         <script src="{{ url_for('static', filename='js/klaro-config.js') }}"></script>
         <script>
-            // Передаем текущий язык из Flask в Klaro!
-            klaroConfig.lang = "{{ lang }}";
-            // Инициализируем Klaro!
-            window.klaro.setup(klaroConfig);
+            document.addEventListener('DOMContentLoaded', (event) => {
+                // Добавляем проверку, что Klaro! и конфиг загрузились
+                if (typeof klaroConfig !== 'undefined' && typeof window.klaro !== 'undefined') {
+                    // Передаем текущий язык из Flask в Klaro!
+                    klaroConfig.lang = "{{ lang }}";
+                    // Инициализируем Klaro!
+                    window.klaro.setup(klaroConfig);
+                } else {
+                    console.error("Klaro! config or library not loaded correctly."); // Сообщение об ошибке, если что-то пошло не так
+                }
+            });
         </script>
         <script src="{{ url_for('static', filename='js/main.js') }}"></script>
         <script>
