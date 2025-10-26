@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title or tr.title }}</title>
-    
+
     <meta name="description" content="{{ meta_description or tr.default_meta_description }}">
     <link rel="canonical" href="{{ request.url_root.rstrip('/') }}{{ request.path }}" />
     {% block social_meta_tags %}{% endblock social_meta_tags %}
@@ -14,10 +14,12 @@
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
     <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
     <link href="{{ url_for('static', filename='css/output.css') }}" rel="stylesheet">
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/klaro@0.7.15/dist/klaro.min.css" />
 
     <style>
         .bg-glass {
@@ -33,6 +35,7 @@
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
         }
+        /* Стили для баннера Klaro можно добавить здесь, если нужно */
     </style>
 </head>
 <body class="h-full text-white font-roboto" {% block body_attributes %}{% endblock %}>
@@ -106,19 +109,19 @@
                 </div>
             </div>
         </header>
-        
+
         <main class="flex-grow pb-32">
             {% if flash %}
              <div class="fixed top-20 right-4 z-50 p-4 rounded-md shadow-lg {{ 'bg-green-600' if flash.category == 'success' else 'bg-red-600' }}">
                 <p class="text-white font-medium">{{ flash.message }}</p>
             </div>
             {% endif %}
-            
+
             <div class="relative z-0">
                  {% block content %}{% endblock %}
             </div>
         </main>
-        
+
         <footer class="sticky bottom-0 z-40 border-t border-slate-700 custom-header-footer">
             <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div class="flex flex-col sm:flex-row justify-between items-center text-center sm:text-left">
@@ -138,7 +141,15 @@
                 </div>
             </div>
         </footer>
-        
+
+        <script defer src="https://cdn.jsdelivr.net/npm/klaro@0.7.15/dist/klaro.min.js"></script>
+        <script src="{{ url_for('static', filename='js/klaro-config.js') }}"></script>
+        <script>
+            // Передаем текущий язык из Flask в Klaro!
+            klaroConfig.lang = "{{ lang }}";
+            // Инициализируем Klaro!
+            window.klaro.setup(klaroConfig);
+        </script>
         <script src="{{ url_for('static', filename='js/main.js') }}"></script>
         <script>
             const mobileMenuButton = document.getElementById('mobile-menu-button');
