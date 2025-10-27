@@ -35,7 +35,9 @@
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
         }
-        /* Стили для баннера Klaro можно добавить здесь, если нужно */
+        /* Стили для выпадающего меню по наведению */
+        .group .group-hover\:block { display: none; }
+        .group:hover .group-hover\:block { display: block; }
     </style>
 </head>
 <body class="h-full text-white font-roboto" {% block body_attributes %}{% endblock %}>
@@ -54,13 +56,30 @@
                         </a>
                         <div class="hidden md:block">
                             <div class="ml-10 flex items-baseline space-x-4">
-                                {% for category in categories_for_nav %}
-                                    <a href="{{ url_for('reviews.category_page', category_slug=category.slug, lang=lang) }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr['nav_' + category.slug.replace('-', '_')] or category.name }}</a>
+                                {% for item in nav_structure %}
+                                    <div class="relative group"> <a href="{{ url_for('reviews.category_page', category_slug=item.main.slug, lang=lang) }}"
+                                           class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center">
+                                            {{ tr['nav_' + item.main.slug.replace('-', '_')] or item.main.name }}
+                                            {% if item.sub %}
+                                                <svg class="ml-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                                            {% endif %}
+                                        </a>
+                                        {% if item.sub %}
+                                            <div class="absolute left-0 mt-1 w-48 rounded-md shadow-lg py-1 bg-slate-800 ring-1 ring-black ring-opacity-5 z-10 hidden group-hover:block">
+                                                {% for subcat in item.sub %}
+                                                    <a href="{{ url_for('reviews.category_page', category_slug=item.main.slug, subcategory_slug=subcat.slug, lang=lang) }}"
+                                                       class="block px-4 py-2 text-sm text-gray-300 hover:bg-slate-700 hover:text-white">
+                                                       {{ tr['nav_' + subcat.slug.replace('-', '_')] or subcat.name }}
+                                                    </a>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
                                 {% endfor %}
                                 <a href="{{ url_for('reviews.live_page', lang=lang) }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ tr.live }}</a>
                             </div>
                         </div>
-                    </div>
+                        </div>
                     <div class="hidden md:block">
                         <div class="ml-4 flex items-center md:ml-6">
                             {% if user %}
@@ -91,8 +110,17 @@
 
             <div class="md:hidden hidden bg-slate-800 border-b border-slate-700" id="mobile-menu">
                 <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                    {% for category in categories_for_nav %}
-                        <a href="{{ url_for('reviews.category_page', category_slug=category.slug, lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr['nav_' + category.slug.replace('-', '_')] or category.name }}</a>
+                    {% for item in nav_structure %}
+                        <a href="{{ url_for('reviews.category_page', category_slug=item.main.slug, lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium font-bold">{{ tr['nav_' + item.main.slug.replace('-', '_')] or item.main.name }}</a>
+                        {% if item.sub %}
+                            <div class="pl-4"> {% for subcat in item.sub %}
+                                <a href="{{ url_for('reviews.category_page', category_slug=item.main.slug, subcategory_slug=subcat.slug, lang=lang) }}"
+                                   class="text-gray-400 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+                                   {{ tr['nav_' + subcat.slug.replace('-', '_')] or subcat.name }}
+                                </a>
+                            {% endfor %}
+                            </div>
+                        {% endif %}
                     {% endfor %}
                     <a href="{{ url_for('reviews.live_page', lang=lang) }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">{{ tr.live }}</a>
                     <hr class="border-slate-700 my-2">
@@ -108,7 +136,7 @@
                     {% endif %}
                 </div>
             </div>
-        </header>
+            </header>
 
         <main class="flex-grow pb-32">
             {% if flash %}
@@ -153,12 +181,13 @@
                     // Инициализируем Klaro!
                     window.klaro.setup(klaroConfig);
                 } else {
-                    console.error("Klaro! config or library not loaded correctly."); // Сообщение об ошибке, если что-то пошло не так
+                    console.error("Klaro! config or library not loaded correctly.");
                 }
             });
         </script>
         <script src="{{ url_for('static', filename='js/main.js') }}"></script>
         <script>
+            // Скрипт для мобильного меню
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
             const icons = mobileMenuButton.querySelectorAll('svg');
