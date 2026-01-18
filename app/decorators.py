@@ -12,14 +12,14 @@ def login_required(f):
     def decorated_function(*args, **kwargs):
         # Check if user is authenticated via session
         if 'user_id' not in session:
+            # Safely get error message
+            error_msg = "Please login to continue"
+            
             try:
-                # Safely get error message
                 if hasattr(g, 'tr') and g.tr and isinstance(g.tr, dict):
-                    error_msg = g.tr.get("error_login_required", "Please login to continue.")
-                else:
-                    error_msg = "Please login to continue."
+                    error_msg = g.tr.get("error_login_required", error_msg)
             except:
-                error_msg = "Please login to continue."
+                pass  # Keep default error message
             
             # Save error message
             session["flash"] = {
@@ -40,13 +40,13 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         # First check authentication
         if 'user_id' not in session:
+            error_msg = "Please login to continue"
+            
             try:
                 if hasattr(g, 'tr') and g.tr and isinstance(g.tr, dict):
-                    error_msg = g.tr.get("error_login_required", "Please login to continue.")
-                else:
-                    error_msg = "Please login to continue."
+                    error_msg = g.tr.get("error_login_required", error_msg)
             except:
-                error_msg = "Please login to continue."
+                pass
             
             session["flash"] = {
                 "category": "error", 
@@ -64,13 +64,13 @@ def admin_required(f):
             user_data = g.db.fetch_one(f"SELECT is_admin FROM users WHERE id = {param_ph}", (user_id,))
             
             if not user_data or not user_data.get('is_admin'):
+                error_msg = "Access denied"
+                
                 try:
                     if hasattr(g, 'tr') and g.tr and isinstance(g.tr, dict):
-                        error_msg = g.tr.get("error_access_denied", "Access denied.")
-                    else:
-                        error_msg = "Access denied."
+                        error_msg = g.tr.get("error_access_denied", error_msg)
                 except:
-                    error_msg = "Access denied."
+                    pass
                 
                 session["flash"] = {
                     "category": "error", 
