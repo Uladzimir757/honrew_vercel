@@ -6,13 +6,25 @@ from app.database import db_manager # Нужно для param_style
 def _get_param_placeholder():
     return "?" if db_manager.param_style == 'qmark' else "%s"
 
+from functools import wraps
+from flask import session, redirect, url_for, g
+from flask_login import current_user
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            lang = session.get('lang', 'ru') # Получаем язык из сессии
-            session["flash"] = {"category": "error", "message": g.tr["error_login_required"]}
-            return redirect(url_for('auth.handle_login', lang=lang)) 
+        if not current_user.is_authenticated:
+            try:
+                error_msg = g.tr["error_login_required"]
+            except (KeyError, AttributeError):
+                # Если перевод не найден или g.tr не существует
+                error_msg = "Please log in to access this page."
+            
+            session["flash"] = {
+                "category": "error", 
+                "message": error_msg
+            }
+            return redirect(url_for("auth.login"))
         return f(*args, **kwargs)
     return decorated_function
 
