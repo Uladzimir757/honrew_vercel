@@ -1,7 +1,6 @@
 # app/decorators.py
 from functools import wraps
 from flask import session, redirect, url_for, g
-from flask_login import current_user
 from app.database import db_manager
 
 def _get_param_placeholder():
@@ -11,23 +10,25 @@ def _get_param_placeholder():
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated:
+        # Проверяем, авторизован ли пользователь через session
+        if 'user_id' not in session:
             try:
-                # Проверяем, существует ли g.tr
-                if hasattr(g, 'tr') and g.tr:
-                    error_msg = g.tr.get("error_login_required", "Please log in to access this page.")
+                # Безопасно получаем сообщение об ошибке
+                if hasattr(g, 'tr') and g.tr and isinstance(g.tr, dict):
+                    error_msg = g.tr.get("error_login_required", "Для выполнения этого действия необходимо войти в систему.")
                 else:
-                    error_msg = "Please log in to access this page."
-            except (KeyError, AttributeError):
-                error_msg = "Please log in to access this page."
+                    error_msg = "Для выполнения этого действия необходимо войти в систему."
+            except:
+                error_msg = "Для выполнения этого действия необходимо войти в систему."
             
+            # Сохраняем сообщение об ошибке
             session["flash"] = {
                 "category": "error", 
                 "message": error_msg
             }
             
-            # Получаем текущий язык из запроса или сессии
-            lang = g.get('lang', session.get('lang', 'ru'))
+            # Получаем язык из запроса или сессии
+            lang = kwargs.get('lang') or g.get('lang', session.get('lang', 'ru'))
             return redirect(url_for("auth.login", lang=lang))
         
         return f(*args, **kwargs)
@@ -36,33 +37,57 @@ def login_required(f):
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Сначала проверяем авторизацию через Flask-Login
-        if not current_user.is_authenticated:
-            return login_required(f)(*args, **kwargs)
-        
-        # Проверяем права администратора через Flask-Login
-        if not current_user.is_admin:
+        # Сначала проверяем авторизацию
+        if 'user_id' not in session:
             try:
-                if hasattr(g, 'tr') and g.tr:
-                    error_msg = g.tr.get("error_access_denied", "Access denied.")
+                if hasattr(g, 'tr') and g.tr and isinstance(g.tr, dict):
+                    error_msg = g.tr.get("error_login_required", "Для выполнения этого действия необходимо войти в систему.")
                 else:
-                    error_msg = "Access denied."
-            except (KeyError, AttributeError):
-                error_msg = "Access denied."
+                    error_msg = "Для выполнения этого действия необходимо войти в систему."
+            except:
+                error_msg = "Для выполнения этого действия необходимо войти в систему."
             
             session["flash"] = {
                 "category": "error", 
                 "message": error_msg
             }
             
-            lang = g.get('lang', session.get('lang', 'ru'))
-            return redirect(url_for('pages.home', lang=lang))
+            lang = kwargs.get('lang') or g.get('lang', session.get('lang', 'ru'))
+            return redirect(url_for('auth.login', lang=lang))
         
-        # Альтернативная проверка через базу данных (если нужно)
-        # param_ph = _get_param_placeholder()
-        # user_data = g.db.fetch_one(f"SELECT is_admin FROM users WHERE id = {param_ph}", (current_user.id,))
-        # if not user_data or not user_data['is_admin']:
-        #     # обработка ошибки...
+        # Проверяем права администратора
+        user_id = session['user_id']
+        param_ph = _get_param_placeholder()
+        
+        try:
+            user_data = g.db.fetch_one(f"SELECT is_admin FROM users WHERE id = {param_ph}", (user_id,))
+            
+            if not user_data or not user_data.get('is_admin'):
+                try:
+                    if hasattr(g, 'tr') and g.tr and isinstance(g.tr, dict):
+                        error_msg = g.tr.get("error_access_denied", "Доступ запрещен.")
+                    else:
+                        error_msg = "Доступ запрещен."
+                except:
+                    error_msg = "Доступ запрещен."
+                
+                session["flash"] = {
+                    "category": "error", 
+                    "message": error_msg
+                }
+                
+                lang = kwargs.get('lang') or g.get('lang', session.get('lang', 'ru'))
+                return redirect(url_for('pages.home', lang=lang))
+                
+        except Exception as e:
+            # Если ошибка при запросе к БД
+            session["flash"] = {
+                "category": "error", 
+                "message": f"Ошибка проверки прав: {str(e)}"
+            }
+            
+            lang = kwargs.get('lang') or g.get('lang', session.get('lang', 'ru'))
+            return redirect(url_for('pages.home', lang=lang))
         
         return f(*args, **kwargs)
     return decorated_function
