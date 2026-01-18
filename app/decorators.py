@@ -2,12 +2,10 @@
 from functools import wraps
 from flask import session, redirect, url_for, g
 from app.database import db_manager # Нужно для param_style
-
+from flask_login import current_user
 def _get_param_placeholder():
     return "?" if db_manager.param_style == 'qmark' else "%s"
 
-from functools import wraps
-from flask import session, redirect, url_for, g
 from flask_login import current_user
 
 def login_required(f):
