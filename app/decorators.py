@@ -1,19 +1,94 @@
-# app/routers/auth.py
-from flask import Blueprint, render_template, request, redirect, url_for, session, g
+# app/decorators.py
+from functools import wraps
+from flask import session, redirect, url_for, g
+from app.database import db_manager
 
-auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
+def _get_param_placeholder():
+    """Returns SQL parameter placeholder"""
+    return "?" if db_manager.param_style == 'qmark' else "%s"
 
-@auth_bp.route('/login', methods=['GET', 'POST'])
-def handle_login():
-    # Ваша логика входа
-    return render_template('auth/login.html')
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check if user is authenticated via session
+        if 'user_id' not in session:
+            try:
+                # Safely get error message
+                if hasattr(g, 'tr') and g.tr and isinstance(g.tr, dict):
+                    error_msg = g.tr.get("error_login_required", "Please login to continue.")
+                else:
+                    error_msg = "Please login to continue."
+            except:
+                error_msg = "Please login to continue."
+            
+            # Save error message
+            session["flash"] = {
+                "category": "error", 
+                "message": error_msg
+            }
+            
+            # Get language from request or session
+            lang = kwargs.get('lang') or g.get('lang', session.get('lang', 'en'))
+            # Use correct endpoint name
+            return redirect(url_for("auth.handle_login", lang=lang))
+        
+        return f(*args, **kwargs)
+    return decorated_function
 
-# ИЛИ если у вас есть отдельный endpoint для GET запросов:
-@auth_bp.route('/login', methods=['GET'])
-def login():
-    return render_template('auth/login.html')
-
-@auth_bp.route('/login', methods=['POST'])
-def login_post():
-    # Обработка POST запроса
-    pass
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # First check authentication
+        if 'user_id' not in session:
+            try:
+                if hasattr(g, 'tr') and g.tr and isinstance(g.tr, dict):
+                    error_msg = g.tr.get("error_login_required", "Please login to continue.")
+                else:
+                    error_msg = "Please login to continue."
+            except:
+                error_msg = "Please login to continue."
+            
+            session["flash"] = {
+                "category": "error", 
+                "message": error_msg
+            }
+            
+            lang = kwargs.get('lang') or g.get('lang', session.get('lang', 'en'))
+            return redirect(url_for('auth.handle_login', lang=lang))
+        
+        # Check admin privileges
+        user_id = session['user_id']
+        param_ph = _get_param_placeholder()
+        
+        try:
+            user_data = g.db.fetch_one(f"SELECT is_admin FROM users WHERE id = {param_ph}", (user_id,))
+            
+            if not user_data or not user_data.get('is_admin'):
+                try:
+                    if hasattr(g, 'tr') and g.tr and isinstance(g.tr, dict):
+                        error_msg = g.tr.get("error_access_denied", "Access denied.")
+                    else:
+                        error_msg = "Access denied."
+                except:
+                    error_msg = "Access denied."
+                
+                session["flash"] = {
+                    "category": "error", 
+                    "message": error_msg
+                }
+                
+                lang = kwargs.get('lang') or g.get('lang', session.get('lang', 'en'))
+                return redirect(url_for('pages.home', lang=lang))
+                
+        except Exception as e:
+            # If database query error
+            session["flash"] = {
+                "category": "error", 
+                "message": f"Error checking permissions: {str(e)}"
+            }
+            
+            lang = kwargs.get('lang') or g.get('lang', session.get('lang', 'en'))
+            return redirect(url_for('pages.home', lang=lang))
+        
+        return f(*args, **kwargs)
+    return decorated_function
